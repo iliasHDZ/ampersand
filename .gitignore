@@ -1,0 +1,5 @@
+build
+iso/boot/kernel.bin
+.idea
+.vscode
+cmake-build-debug
