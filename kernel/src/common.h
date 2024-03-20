@@ -69,6 +69,8 @@ void kthread_await(ThreadSignal* signal);
 
 void kthread_emit(ThreadSignal* signal);
 
+void* vir_addr_to_phy(void* addr);
+
 time64 time();
 
 static inline char get_hex_char(u8 val) {

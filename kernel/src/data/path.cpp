@@ -58,8 +58,10 @@ void Path::parse(const char* path) {
 
     prev_slash = false;
     for (usize i = 0; i < len; i++) {
-        if (prev_slash)
+        if (prev_slash) {
             str_ptrs[str_ptr_counter++] = str_tab + i;
+        
+        }
 
         prev_slash = str_tab[i] == '/';
         if (prev_slash)

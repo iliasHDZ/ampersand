@@ -136,6 +136,15 @@ void ThreadScheduler::handle_exception(Exception* excpt) {
 
     excpt->get_state()->log(true);
 
+    usize* bp = (usize*)excpt->get_state()->bp();
+
+    Log::ERR() << "Calltrace:\n";
+
+    while (*bp) {
+        Log::ERR() << Out::phex(8) << "  - " << bp[1] << '\n';
+        bp = (usize*)*bp;
+    }
+
     Log::ERR() << '\n';
     Log::ERR() << "Ampersand & v" << AMPERSAND_VERSION << '\n';
     Log::ERR() << '\n';

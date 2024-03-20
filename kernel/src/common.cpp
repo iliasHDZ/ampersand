@@ -2,6 +2,7 @@
 #include <logger.hpp>
 
 #include "mem/manager.hpp"
+#include "mem/paging.hpp"
 #include "thread.hpp"
 
 extern "C" usize strlen(const char* str) {
@@ -111,6 +112,10 @@ extern "C" void kthread_create(ThreadFunc func, void* param) {
 
 extern "C" void kthread_emit(ThreadSignal* signal) {
     ThreadScheduler::get()->emit(signal);
+}
+
+extern "C" void* vir_addr_to_phy(void* addr) {
+    return (void*)VirtualMemoryManager::get()->get_current()->vir_addr_to_phy((u64)(u32)addr);
 }
 
 extern "C" time64 time() {

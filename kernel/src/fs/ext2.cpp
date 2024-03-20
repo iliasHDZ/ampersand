@@ -643,11 +643,9 @@ u32 Ext2FileSystem::alloc(u8 type) {
     if (type == EXT2_BLOCK) {
         sblk.num_free_blocks--;
         bgd_table[block_group].num_free_blocks--;
-        Log::INFO() << "ALLOC BLOCK " << ret << '\n';
     } else {
         sblk.num_free_inodes--;
         bgd_table[block_group].num_free_inodes--;
-        Log::INFO() << "ALLOC INODE " << ret << '\n';
         
         ret++;
     }

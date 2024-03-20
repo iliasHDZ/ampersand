@@ -88,7 +88,7 @@ void* LCHeap::malloc(usize size, u32 align) {
     }
 
     if (!new_block->fits_with_size(size, (usize)limit)) {
-        if (!request_resize || !request_resize((void*)new_block->limit()))
+        if (!request_resize || !request_resize((void*)(new_block->data() + size)))
             return nullptr;
     }
 

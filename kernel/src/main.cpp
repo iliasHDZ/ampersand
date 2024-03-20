@@ -47,6 +47,7 @@ void thread2(void*) {
 extern "C" void __cxa_atexit() {}
 
 void kernel_init(void*) {
+    /*
 #ifdef UNIT_TESTING_BEFORE_STARTUP
     init_all_unit_tests();
 
@@ -56,6 +57,7 @@ void kernel_init(void*) {
         Log::WARN() << "Not all tests ran were successfull!\n";
     }
 #endif
+    */
 
     PCIManager::init();
 
@@ -167,8 +169,8 @@ extern "C" void kernel_main() {
     
     PhysicalMemoryMap::log_memory_map();
 
-    MemoryManager::init();
     VirtualMemoryManager::init();
+    MemoryManager::init();
 
     auto o = Log::INFO();
     o << "Available memory: ";

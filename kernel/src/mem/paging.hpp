@@ -49,6 +49,10 @@ public:
 
     void init_manager();
 
+    void use(VirtualMemory* vmem);
+
+    inline VirtualMemory* get_current() { return current_vmem; };
+
 public:
     static VirtualMemoryManager* get();
 
@@ -58,4 +62,5 @@ public:
 
 private:
     DLChain<VirtualMemory> vmems;
+    VirtualMemory* current_vmem = nullptr;
 };

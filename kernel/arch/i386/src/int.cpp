@@ -1,5 +1,7 @@
 #include "int.hpp"
 
+#include <logger.hpp>
+
 #include <arch/exception.hpp>
 
 #include "thread.hpp"
@@ -602,6 +604,7 @@ static int_idt_ptr idt_ptr = {
 
 static bool int_load_idt() {
     __asm__ __volatile__("lidtl (%0)" : : "r" (&idt_ptr));
+
     return true;
 }
 

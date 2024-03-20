@@ -12,6 +12,11 @@ thread_run:
     ; setup the thread stack
     mov esp, [thread_run_esp]
     mov ebp, [thread_run_ebp]
+    
+    ; pushing zeros to mark an end for call traces
+    mov eax, 0
+    push eax
+    push eax
 
     ; prepare function calling
     mov eax, [thread_run_param]

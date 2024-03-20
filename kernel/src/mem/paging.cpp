@@ -10,7 +10,7 @@ u64 VirtualMemory::vir_addr_to_phy(u64 addr) {
     u64 idx = addr / ARCH_PAGE_SIZE;
     u64 off = addr % ARCH_PAGE_SIZE;
 
-    u64 pidx = vir_paddr_to_phy(addr);
+    u64 pidx = vir_paddr_to_phy(idx);
 
     return pidx * ARCH_PAGE_SIZE + off;
 }
@@ -67,7 +67,12 @@ void VirtualMemoryManager::init_manager() {
         MemoryManager::get()->reserve_page(pidx);
     }
 
-    MemoryManager::get()->init_heap();
+    use(kmem);
+}
+
+void VirtualMemoryManager::use(VirtualMemory* vmem) {
+    current_vmem = vmem;
+    vmem->use();
 }
 
 VirtualMemoryManager* VirtualMemoryManager::get() {

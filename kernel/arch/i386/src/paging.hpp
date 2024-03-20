@@ -37,14 +37,18 @@ public:
 
     u64 vir_paddr_to_phy(u64 vir_paddr) override;
 
+    void use() override;
+
+    u8* map_phy_paddr(u64 phy_paddr);
+
 private:
     bool retain_page_tab(u32 idx);
     
     void release_page_tab(u32 idx);
 
-    void set_page_tab(u32 idx, arch_paging_table* page_tab, bool kernel_page);
+    void set_page_tab(u32 idx, u64 page_tab, bool kernel_page);
 
-    arch_paging_table* get_page_table(u32 idx);
+    u64 get_page_table(u32 idx);
 
     void clear_page_tab(u32 idx);
 
@@ -53,5 +57,5 @@ private:
 
     bool is_kernel;
 
-    arch_paging_table* page_dir;
+    u64 page_dir;
 };

@@ -11,7 +11,7 @@ MemorySectionManager::MemorySectionManager()
     : range{0, 0} {}
 
 MemorySectionManager::MemorySectionManager(PageRange range)
-    : range(range)
+    : range(range), pages_used(0)
 {
     init_bitmap();
 }
@@ -39,6 +39,9 @@ u64 MemorySectionManager::alloc_page() {
     u64 idx8 = 0;
     for (; idx8 < bitmap_size; idx8++)
         if (bitmap[idx8] != 0xff) break;
+
+    if (idx8 >= bitmap_size)
+        return 0;
     
     if (bitmap[idx8] == 0xff)
         return 0;
@@ -84,18 +87,18 @@ void MemorySectionManager::init_bitmap() {
         bitmap_size_pages++;
 
     for (u64 i = 0; i < bitmap_size_pages; i++)
-        VirtualMemory::get_kernel_memory()->map_page(kernel_end_page_counter + i, range.base, VMEM_PAGE_READ | VMEM_PAGE_WRITE);
+        VirtualMemory::get_kernel_memory()->map_page(kernel_end_page_counter + i, range.base + i, VMEM_PAGE_READ | VMEM_PAGE_WRITE);
 
     bitmap = (u8*)(kernel_end_page_counter * ARCH_PAGE_SIZE);
     kernel_end_page_counter += bitmap_size_pages;
 
     for (u64 i = 0; i < bitmap_size_pages * ARCH_PAGE_SIZE; i++) {
-        if (i < page_count / 8) {
+        if (i < (page_count / 8)) {
             bitmap[i] = 0;
             continue;
         }
 
-        if (i > page_count / 8) {
+        if (i > (page_count / 8)) {
             bitmap[i] = 0xff;
             continue;
         }
@@ -129,11 +132,17 @@ void MemoryManager::reserve_page(u64 idx) {
     msm->reserve_page(idx);
 }
 
+void joke() {
+
+}
+
 u64 MemoryManager::alloc_page() {
     for (u32 i = 0; i < section_count; i++) {
         u64 idx = sections[i].alloc_page();
         if (idx != 0)
             return idx;
+
+        joke();
     }
 
     panic("Out of memory!");
@@ -184,6 +193,8 @@ void MemoryManager::init_heap() {
     kheap_base  = kernel_end_page_counter * ARCH_PAGE_SIZE;
     kheap_limit = kheap_base;
 
+    kheap = LCHeap((void*)kheap_base, (void*)kheap_limit);
+
     kheap.set_resize_func(heap_resize_func);
 
     has_initialized = true;
@@ -225,6 +236,8 @@ MemoryManager* MemoryManager::get() {
 bool MemoryManager::init() {
     kernel_end_page_counter = VirtualMemoryManager::get_kernel_range().to_pagerange().limit + 1;
 
+    auto krange = PhysicalMemoryMap::get_kernel_range().to_pagerange();
+
     for (auto& prange : PhysicalMemoryMap::get_ranges()) {
         if (instance.section_count >= MEMORY_MAP_MAX_RANGE_COUNT) {
             Log::WARN() << "MemoryManager: Memory ranges exceeds MEMORY_MAP_MAX_RANGE_COUNT";
@@ -234,8 +247,15 @@ bool MemoryManager::init() {
         if (prange.type != PhysicalMemoryType::AVAILABLE)
             continue;
 
-        instance.sections[instance.section_count++] = MemorySectionManager(prange.range.to_inner_pagerange());
+        auto range = prange.range.to_inner_pagerange();
+
+        if (krange.overlaps(range))
+            range.base = krange.limit;
+
+        instance.sections[instance.section_count++] = MemorySectionManager(range);
     }
+
+    instance.init_heap();
 
     return true;
 }
