@@ -1,4 +1,4 @@
-#include "drv/vga/vga.hpp"
+#include "drv/vga_text.hpp"
 
 #include "boot/boot.hpp"
 #include "../test/tests.hpp"
@@ -16,14 +16,9 @@
 
 #include <logger.hpp>
 
-u16* thinger = (u16*)0xb8000;
-
-u8 flipflop = 2;
-
 extern ThreadSignal keyboard_input_signal;
 
 ThreadSignal thread2_signal;
-
 
 void thread1(void*) {
     while (true) {
@@ -154,23 +149,24 @@ void kernel_init(void*) {
 static DebugTerminalOutput dbg;
 
 extern "C" void kernel_main() {
-    cout.set_terminal(&dbg);
+    BootLoader::init();
+    VirtualMemoryManager::init();
+    MemoryManager::init();
+
+    VGATextDriver::init();
+
+    cout.add_terminal(&dbg);
+    cout.add_terminal(VGATextDriver::get());
     cout.set_cursor_visible(true);
     cout.clear(TERM_BLACK);
 
     cout.write("Terminal output loaded\n");
-    
-    BootLoader::init();
-
     Log::INFO() << "Initializing kernel...\n";
     Log::INFO() << "Kernel: Ampersand & v" << AMPERSAND_VERSION << '\n';
     Log::INFO() << "Bootloader: " << BootLoader::get_name() << '\n';
     Log::INFO() << "Target Arch: " << ARCH_NAME << " (" << ARCH_BITS << "-bit)\n";
     
     PhysicalMemoryMap::log_memory_map();
-
-    VirtualMemoryManager::init();
-    MemoryManager::init();
 
     auto o = Log::INFO();
     o << "Available memory: ";

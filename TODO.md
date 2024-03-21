@@ -1,10 +1,10 @@
 # Ampersand Operating System TODO List
 
 ## Kernel
-- [ ] Filesystem manager operations complete
+- [x] Filesystem manager operations complete
 - [x] Ext2 filesystem reading
 - [x] Ext2 filesystem writing
-- [ ] Paging
+- [x] Paging
 - [ ] Process management
 - [ ] Elf executable loading
 - [ ] Text VGA block device

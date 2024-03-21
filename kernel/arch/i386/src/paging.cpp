@@ -60,10 +60,13 @@ static u64 arch_alloc_table() {
     }
 
     u64 page = MemoryManager::get()->alloc_page();
-    if (page)
+    if (page) {
+        memset(arch_map_phy_paddr(page), 0, sizeof(arch_paging_table));
+
         return page;
+    }
     
-    panic("Ran out of temporary paging tables");
+    panic("Ran out of paging tables");
     return 0;
 }
 
@@ -163,6 +166,15 @@ u64 I386VirtualMemory::vir_paddr_to_phy(u64 vir_paddr) {
     return table->entries[tab_idx] >> 12;
 }
 
+u64 I386VirtualMemory::driver_map(u64 phy_paddr, u64 page_count) {
+    driver_map_top -= page_count;
+
+    for (u32 i = 0; i < page_count; i++)
+        map_page(driver_map_top + i, phy_paddr + i, VMEM_PAGE_READ | VMEM_PAGE_WRITE);
+    
+    return driver_map_top;
+}
+
 void I386VirtualMemory::use() {
     asm volatile("mov %0, %%cr3":: "r"(page_dir * ARCH_PAGE_SIZE));
     paging_initiated = true;
@@ -179,7 +191,7 @@ u8* I386VirtualMemory::map_phy_paddr(u64 phy_paddr) {
 
     map_page(paddr, phy_paddr, VMEM_PAGE_READ | VMEM_PAGE_WRITE);
     
-    return nullptr;
+    return (u8*)(paddr * ARCH_PAGE_SIZE);
 }
 
 bool I386VirtualMemory::retain_page_tab(u32 idx) {

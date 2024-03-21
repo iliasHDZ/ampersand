@@ -5,93 +5,39 @@
 #include "terminal.hpp"
 #include "stream.hpp"
 
+#define MAX_TERM_OUTPUT_TARGETS 4
+
 class TerminalOutputStream : public OutputStream {
 public:
-    void set_terminal(TerminalOutput* target);
+    void add_terminal(TerminalOutput* target);
 
     isize write(const void* data, usize size) override;
 
-    inline u32 get_cursor_x() {
-        if (target == nullptr) return 0;
-        return target->get_cursor_x();
-    }
+    void set_cursor(u32 x, u32 y);
 
-    inline u32 get_cursor_y() {
-        if (target == nullptr) return 0;
-        return target->get_cursor_y();
-    }
+    void set_cursor_x(u32 v);
 
-    inline void set_cursor(u32 x, u32 y) {
-        if (target == nullptr) return;
-        return target->set_cursor(x, y);
-    }
+    void set_cursor_y(u32 v);
 
-    inline void set_cursor_x(u32 v) {
-        if (target == nullptr) return;
-        return target->set_cursor_x(v);
-    }
+    void set_bg(u8 color);
 
-    inline void set_cursor_y(u32 v) {
-        if (target == nullptr) return;
-        return target->set_cursor_y(v);
-    }
+    void set_fg(u8 color);
 
-    inline void set_bg(u8 color) {
-        if (target == nullptr) return;
-        return target->set_bg(color);
-    }
-
-    inline void set_fg(u8 color) {
-        if (target == nullptr) return;
-        return target->set_fg(color);
-    }
-
-    inline void set_color(u8 bg, u8 fg) {
-        if (target == nullptr) return;
-        return target->set_color(bg, fg);
-    }
+    void set_color(u8 bg, u8 fg);
     
-    inline void put(char ch) {
-        if (target == nullptr) return;
-        return target->put(ch);
-    }
+    void put(char ch);
 
-    inline void write(const char* string, usize len) {
-        if (target == nullptr) return;
-        return target->write(string, len);
-    }
+    void write(const char* string, usize len);
 
-    inline void write(const char* string) {
-        if (target == nullptr) return;
-        return target->write(string);
-    }
+    void write(const char* string);
 
-    inline void clear(u8 bg = -1) {
-        if (target == nullptr) return;
-        return target->clear(bg);
-    }
+    void clear(u8 bg = -1);
 
-    inline void scroll(u32 lines) {
-        if (target == nullptr) return;
-        return target->scroll(lines);
-    }
+    void scroll(u32 lines);
 
-    inline u32 get_width() const {
-        if (target == nullptr) return 0;
-        return target->get_width();
-    }
-
-    inline u32 get_height() const {
-        if (target == nullptr) return 0;
-        return target->get_height();
-    }
-
-    inline void set_cursor_visible(bool visible) const {
-        if (target == nullptr) return;
-        return target->set_cursor_visible(visible);
-    }
+    void set_cursor_visible(bool visible) const;
 
 private:
-    TerminalOutput* target = nullptr;
-
+    TerminalOutput* targets[MAX_TERM_OUTPUT_TARGETS];
+    usize target_count = 0;
 };

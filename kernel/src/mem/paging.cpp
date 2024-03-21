@@ -75,6 +75,17 @@ void VirtualMemoryManager::use(VirtualMemory* vmem) {
     vmem->use();
 }
 
+u8* VirtualMemoryManager::driver_map(u64 phy_addr, u64 size) {
+    VirtualMemory* kmem = VirtualMemory::get_kernel_memory();
+
+    MemRange  mrange = MemRange::addr_size(phy_addr, size);
+    PageRange prange = mrange.to_pagerange();
+
+    u64 vir_paddr = kmem->driver_map(prange.base, prange.page_count());
+
+    return (u8*)((usize)vir_paddr * ARCH_PAGE_SIZE) + (phy_addr % ARCH_PAGE_SIZE);
+}
+
 VirtualMemoryManager* VirtualMemoryManager::get() {
     return &vmm_instance;
 }

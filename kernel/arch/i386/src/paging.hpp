@@ -37,6 +37,8 @@ public:
 
     u64 vir_paddr_to_phy(u64 vir_paddr) override;
 
+    u64 driver_map(u64 phy_paddr, u64 page_count) override;
+
     void use() override;
 
     u8* map_phy_paddr(u64 phy_paddr);
@@ -54,6 +56,8 @@ private:
 
 private:
     u16 page_dir_map_count[1024] = { 0 };
+
+    u32 driver_map_top = 0xffc00;
 
     bool is_kernel;
 

@@ -21,6 +21,8 @@ public:
 
     virtual u64 vir_paddr_to_phy(u64 vir_paddr) = 0;
 
+    virtual u64 driver_map(u64 phy_paddr, u64 page_count) = 0;
+
     u64 vir_addr_to_phy(u64 addr);
 
     bool alloc_page(u64 vir_paddr, usize perms);
@@ -52,6 +54,8 @@ public:
     void use(VirtualMemory* vmem);
 
     inline VirtualMemory* get_current() { return current_vmem; };
+
+    u8* driver_map(u64 phy_addr, u64 size);
 
 public:
     static VirtualMemoryManager* get();
