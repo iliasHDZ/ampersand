@@ -5,8 +5,8 @@
 - [x] Ext2 filesystem reading
 - [x] Ext2 filesystem writing
 - [x] Paging
-- [ ] Process management
-- [ ] Elf executable loading
+- [x] Process management
+- [x] Elf executable loading
 - [ ] Text VGA block device
 
 ## Process syscalls
