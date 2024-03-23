@@ -18,6 +18,8 @@ struct PACKED_STRUCT int_regs {
 
 extern int_regs* int_isr_regs;
 
+extern "C" void* syscall_handler_func;
+
 void int_regs_to_cpu_state(CPUState* dst, int_regs* src);
 
 bool int_register_irq(u32 id, InterruptHandler handler, void* param = nullptr);

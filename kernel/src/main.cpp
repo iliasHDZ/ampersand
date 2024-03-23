@@ -6,8 +6,9 @@
 #include "mem/manager.hpp"
 #include "mem/paging.hpp"
 #include "drv/pci/pci.hpp"
-#include "thread.hpp"
+#include "proc/thread.hpp"
 #include "fs/fs_manager.hpp"
+#include "proc/manager.hpp"
 #include "fs/devfs.hpp"
 
 #include "drv/debugout.hpp"
@@ -87,31 +88,26 @@ void kernel_init(void*) {
         return;
     }
     
-    FileSystemManager::get()->dbg_ls("/mnt/");
+    FileSystemManager::get()->dbg_ls("/mnt/bin/");
     Log::INFO() << '\n';
 
-    err = FileSystemManager::get()->mkdir("/mnt/dir1", S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH, nullptr);
+    FileDescription* fd;
+
+    err = FileSystemManager::get()->open(&fd, "/mnt/bin/test", 0, nullptr);
     if (err != ENOERR) {
         Log::INFO() << "test: " << get_error_message(err) << '\n';
         return;
     }
 
-    FileDescription* fd;
+    Process* process = ProcessManager::get()->create();
 
-    FileSystemManager::get()->open(&fd, "/mnt/dir1/test_file", OPENF_CREAT | OPENF_READ | OPENF_WRITE, nullptr);
-
-    fd->write((void*)"This file was made in the Ampersand kernel\n", 0, 43);
+    err = process->exec(fd);
+    if (err != ENOERR) {
+        Log::INFO() << "test: " << get_error_message(err) << '\n';
+        return;
+    }
     
     FileSystemManager::get()->close(fd);
-
-    FileSystemManager::get()->dbg_ls("/");
-    Log::INFO() << '\n';
-    
-    FileSystemManager::get()->dbg_ls("/mnt/");
-    Log::INFO() << '\n';
-    
-    FileSystemManager::get()->dbg_ls("/mnt/dir1/");
-    Log::INFO() << '\n';
 
     /*
     FileSystemManager::get()->dbg_ls("/mnt/");
@@ -144,9 +140,13 @@ void kernel_init(void*) {
     */
 
     FileSystemManager::get()->unmount("/mnt");
+
+    for (;;);
 }
 
 static DebugTerminalOutput dbg;
+
+#include <arch/thread.hpp>
 
 extern "C" void kernel_main() {
     BootLoader::init();
@@ -180,6 +180,10 @@ extern "C" void kernel_main() {
     o << ")\n";
 
     arch_init();
+
+    arch_thread_set_syscall_handler([]() {
+        Log::INFO() << "Syscall!!\n";
+    });
 
     ThreadScheduler::init();
 

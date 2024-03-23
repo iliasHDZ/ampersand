@@ -9,6 +9,8 @@ extern isr_src_stack_ebp
 
 global isr_return
 
+extern syscall_handler_func
+
 isr_common_stub:
     pusha
     mov ax, ds
@@ -33,7 +35,15 @@ isr_return:
     mov esp, [isr_src_stack_esp]
     mov ebp, [isr_src_stack_ebp]
 
-    pop eax 
+    mov eax, [syscall_handler_func]
+    cmp eax, 0
+    je .no_syscall
+    sti
+    call eax
+    cli
+
+.no_syscall:
+    pop eax
     mov ds, ax
     mov es, ax
     mov fs, ax

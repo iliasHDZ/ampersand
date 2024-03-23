@@ -1,6 +1,6 @@
 #include "thread.hpp"
 
-#include "logger.hpp"
+#include <logger.hpp>
 
 static u32 thread_id_counter = 0;
 
@@ -10,8 +10,8 @@ static ThreadScheduler scheduler_instance;
 #pragma diag_suppress 144
 #endif
 
-Thread::Thread(ThreadScheduler* scheduler)
-    : scheduler(scheduler) {}
+Thread::Thread(ThreadScheduler* scheduler, VirtualMemory* vmem)
+    : scheduler(scheduler), vmem(vmem) {}
 
 Thread::~Thread() {
     if (scheduler->current_thread == this)
@@ -46,6 +46,8 @@ bool Thread::is_blocked() {
 void NO_RETURN Thread::resume() {
     cpu_state_dirty = true;
 
+    VirtualMemoryManager::get()->use(vmem);
+
     arch_thread_resume(&instance);
 }
 
@@ -56,12 +58,23 @@ u32 Thread::get_id() {
 ThreadScheduler::ThreadScheduler() {}
 
 Thread* ThreadScheduler::create_thread(ThreadEntry entry, void* param, usize stack_size) {
-    Thread* thread = new Thread(this);
+    Thread* thread = new Thread(this, VirtualMemory::get_kernel_memory());
 
     thread->id = thread_id_counter++;
     thread->allocated_stack = kmalloc(stack_size);
 
     arch_thread_create(&(thread->instance), (void*)entry, param, thread->allocated_stack, stack_size);
+
+    threads.append(thread);
+    return thread;
+}
+
+Thread* ThreadScheduler::create_user_thread(ThreadEntry entry, VirtualMemory* vmem, void* param, void* stack, usize stack_size) {
+    Thread* thread = new Thread(this, vmem);
+    
+    thread->id = thread_id_counter++;
+
+    arch_thread_create(&(thread->instance), (void*)entry, param, stack, stack_size);
 
     threads.append(thread);
     return thread;
@@ -105,6 +118,8 @@ void ThreadScheduler::emit(ThreadSignal* signal) {
 }
 
 void ThreadScheduler::handle_yield(ArchThreadYieldStatus status) {
+    current_thread->vmem = VirtualMemoryManager::get()->get_current();
+
     if (status == ArchThreadYieldStatus::TIMER) {
         run();
         return;

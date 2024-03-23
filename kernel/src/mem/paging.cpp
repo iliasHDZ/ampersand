@@ -15,7 +15,7 @@ u64 VirtualMemory::vir_addr_to_phy(u64 addr) {
     return pidx * ARCH_PAGE_SIZE + off;
 }
 
-bool VirtualMemory::alloc_page(u64 vir_paddr, usize perms) {
+bool VirtualMemory::alloc_page(u64 vir_paddr, VMemPerms perms) {
     u64 pidx = MemoryManager::get()->alloc_page();
 
     if (!map_page(vir_paddr, pidx, perms)) {

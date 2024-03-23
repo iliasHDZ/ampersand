@@ -2,38 +2,6 @@ ENTRY(_start)
 
 SECTIONS
 {
-    /*. = 1M;
-
-    .boot :
-    {
-        KEEP(*(.multiboot_header))
-    }
-
-    .loader :
-    {
-        *(kernel_loader)
-    }
-
-    .kernel : ALIGN(4096)
-    {
-        *(.kernel_begin)
-        *(.text)
-        *(.rodata)
-        *(.data)
-        *(.bss)
-        *(.kernel_end)
-    }*/
-
-    /*
-    .multiboot.data : {
-        *(.multiboot.data)
-    }
-
-    .multiboot.text : {
-        *(.multiboot.text)
-    }
-    */
-
     . = 1M;
 
     .boot :

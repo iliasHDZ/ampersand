@@ -13,6 +13,8 @@ extern "C" void NO_RETURN thread_run();
 
 static ArchThreadYieldHandler yield_handler = nullptr;
 
+static ArchThreadSyscallHandler syscall_handler = nullptr;
+
 static ExceptionHandler excpt_handler = nullptr;
 
 static ArchThreadInstance* current_running_thread = nullptr;
@@ -23,6 +25,10 @@ void arch_thread_set_yield_handler(ArchThreadYieldHandler handler) {
 
 void arch_thread_set_exception_handler(ExceptionHandler handler) {
     excpt_handler = handler;
+}
+
+void arch_thread_set_syscall_handler(ArchThreadSyscallHandler handler) {
+    syscall_handler = handler;
 }
 
 void arch_thread_get_cpu_state(ArchThreadInstance* ins, CPUState* state) {
@@ -36,10 +42,12 @@ void arch_thread_create(ArchThreadInstance* ins, void* entry, void* param, void*
 
     usize* stack_top = (usize*)((usize)stack + stack_size);
 
-    stack_top[-1] = 0;
-
     ins->esp = (usize)(stack_top - 1);
     ins->ebp = ins->esp;
+}
+
+void arch_thread_exit() {
+    asm("int $0xC2");
 }
 
 void NO_RETURN arch_thread_resume(ArchThreadInstance* ins) {
@@ -84,7 +92,7 @@ void kthread_await(ThreadSignal* signal) {
 
 void arch_thread_init() {
     int_register_irq(0xC0 - INT_EXCPT_COUNT, [](void*) {
-        arch_thread_invoke_yield(ArchThreadYieldStatus::SYSCALL);
+        syscall_handler_func = (void*)syscall_handler;
     });
     
     int_register_irq(0xC1 - INT_EXCPT_COUNT, [](void*) {

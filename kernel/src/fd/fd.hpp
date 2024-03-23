@@ -14,4 +14,5 @@ public:
 
     virtual u64 write(void* in, u64 offset, u64 size) = 0;
 
+    bool may_exec = false;
 };

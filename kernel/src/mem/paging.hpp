@@ -11,11 +11,23 @@
 
 class VirtualMemoryManager;
 
+typedef usize VMemPerms;
+
+struct AccessFault {
+    enum AccessFaultType {
+        NOT_PRESENT,
+        READ_ONLY
+    };
+
+    AccessFaultType type;
+    usize address;
+};
+
 class VirtualMemory : public DLChainItem {
 public:
     virtual ~VirtualMemory();
 
-    virtual bool map_page(u64 vir_paddr, u64 phy_paddr, usize perms) = 0;
+    virtual bool map_page(u64 vir_paddr, u64 phy_paddr, VMemPerms perms) = 0;
 
     virtual void unmap_page(u64 vir_paddr) = 0;
 
@@ -25,7 +37,7 @@ public:
 
     u64 vir_addr_to_phy(u64 addr);
 
-    bool alloc_page(u64 vir_paddr, usize perms);
+    bool alloc_page(u64 vir_paddr, VMemPerms perms);
 
     void dealloc_page(u64 vir_paddr);
 

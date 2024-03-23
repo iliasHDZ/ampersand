@@ -47,6 +47,8 @@ usize strlen(const char* str);
 
 bool streq(const char* str1, const char* str2);
 
+bool memeq(const void* ptr1, const void* ptr2, usize num);
+
 void* memcpy(void* dst, const void* src, usize size);
 
 void* memset(void* dst, int ch, usize size);
@@ -68,6 +70,8 @@ void kthread_create(ThreadFunc func, void* param);
 void kthread_await(ThreadSignal* signal);
 
 void kthread_emit(ThreadSignal* signal);
+
+void kthread_exit();
 
 void* vir_addr_to_phy(void* addr);
 

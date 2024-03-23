@@ -12,6 +12,8 @@
 
 int_regs* int_isr_regs;
 
+extern "C" void* syscall_handler_func = nullptr;
+
 static const char* int_isr_names[] = {
     "Division By Zero",
     "Debug",
@@ -657,6 +659,8 @@ bool int_register_irq(u32 id, InterruptHandler handler, void* param) {
 
 extern "C" void int_isr_handler() {
     u32 id = int_isr_regs->int_no;
+
+    syscall_handler_func = nullptr;
 
     arch_cpu_was_idling = arch_cpu_is_idling;
     arch_cpu_is_idling  = false;

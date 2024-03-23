@@ -6,7 +6,7 @@
 #include "io.h"
 
 #include <logger.hpp>
-#include <thread.hpp>
+#include <proc/thread.hpp>
 
 bool arch_cpu_is_idling  = false;
 bool arch_cpu_was_idling = false;

@@ -104,8 +104,6 @@ I386VirtualMemory::~I386VirtualMemory() {
         arch_free_table(page_dir);
 }
 
-static bool map_forcefully = false;
-
 bool I386VirtualMemory::map_page(u64 vir_paddr, u64 phy_paddr, usize perms) {
     u16 dir_idx = vir_paddr >> 10;
     u16 tab_idx = vir_paddr & 0x3ff;
@@ -114,15 +112,12 @@ bool I386VirtualMemory::map_page(u64 vir_paddr, u64 phy_paddr, usize perms) {
 
     u64 table_paddr = get_page_table(dir_idx);
     if (table_paddr == 0)
-        return 0;
+        return false;
     
     arch_paging_table* table = (arch_paging_table*)arch_map_phy_paddr(table_paddr);
 
-    if (table->entries[tab_idx] & ARCH_PAGETAB_PRESENT) {
+    if (table->entries[tab_idx] & ARCH_PAGETAB_PRESENT)
         release_page_tab(dir_idx);
-        if (!map_forcefully)
-            return false;
-    }
 
     u32 tab_ent = (phy_paddr << 12) | ARCH_PAGETAB_PRESENT;
 
@@ -183,8 +178,6 @@ void I386VirtualMemory::use() {
 u8* I386VirtualMemory::map_phy_paddr(u64 phy_paddr) {
     if (!paging_initiated)
         return nullptr;
-
-    map_forcefully = true;
 
     u32 paddr = 0xffc00 + kernel_temp_page_counter;
     kernel_temp_page_counter = (kernel_temp_page_counter + 1) & 0x3ff;

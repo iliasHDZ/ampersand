@@ -302,6 +302,11 @@ SyscallError FileSystemManager::open(FileDescription** fdout, const char* rpath,
 
     FileDescription* fd = fs->create_fd(&inode);
     openfds.append({ fd, inode, 1 });
+
+    if (creds)
+        fd->may_exec = creds->may_exec(&inode);
+    else
+        fd->may_exec = true;
     
     *fdout = fd;
 

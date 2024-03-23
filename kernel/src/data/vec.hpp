@@ -2,6 +2,8 @@
 
 #include <common.h>
 
+#define VEC_NOT_FOUND 0xffffffff
+
 template <typename T>
 class Vec {
 public:
@@ -22,6 +24,29 @@ public:
     ~Vec() {
         if (has_init && array)
             kfree((void*)array);
+    }
+
+    Vec(const Vec& vec) {
+        test_init();
+    
+        count    = vec.count;
+        capacity = vec.capacity;
+        
+        array = new T[capacity];
+        memcpy(array, vec.array, count * sizeof(T));
+    }
+
+    Vec& operator=(const Vec& vec) {
+        test_init();
+        if (has_init && array)
+            kfree((void*)array);
+    
+        count    = vec.count;
+        capacity = vec.capacity;
+        
+        array = new T[capacity];
+        memcpy(array, vec.array, count * sizeof(T));
+        return *this;
     }
 
     void expand() {
@@ -51,6 +76,24 @@ public:
         count--;
         for (usize i = index; i < count; i++)
             array[i] = array[i + 1];
+    }
+
+    usize index_of(T val) {
+        for (usize i = 0; i < count; i++) {
+            if (array[i] == val)
+                return i;
+        }
+
+        return VEC_NOT_FOUND;
+    }
+
+    bool has(T val) {
+        for (auto& v : (*this)) {
+            if (v == val)
+                return true;
+        }
+
+        return false;
     }
 
     usize size() const {

@@ -3,7 +3,7 @@
 
 #include "mem/manager.hpp"
 #include "mem/paging.hpp"
-#include "thread.hpp"
+#include "proc/thread.hpp"
 
 extern "C" usize strlen(const char* str) {
     const char* begin = str;
@@ -19,6 +19,15 @@ extern "C" bool streq(const char* str1, const char* str2) {
     }
 
     return *str1 == *str2;
+}
+
+extern "C" bool memeq(const void* ptr1, const void* ptr2, usize num) {
+    for (usize i = 0; i < num; i++) {
+        if (((u8*)ptr1)[i] != ((u8*)ptr2)[i])
+            return false;
+    }
+
+    return true;
 }
 
 template <typename T>
@@ -112,6 +121,10 @@ extern "C" void kthread_create(ThreadFunc func, void* param) {
 
 extern "C" void kthread_emit(ThreadSignal* signal) {
     ThreadScheduler::get()->emit(signal);
+}
+
+extern "C" void kthread_exit() {
+    arch_thread_exit();
 }
 
 extern "C" void* vir_addr_to_phy(void* addr) {

@@ -1,10 +1,9 @@
 #pragma once
 
-#include "common.h"
-
-#include "data/chain.hpp"
-
+#include <common.h>
+#include <data/chain.hpp>
 #include <arch/thread.hpp>
+#include <mem/paging.hpp>
 
 #define DEFAULT_STACK_SIZE 64 * KiB
 
@@ -14,7 +13,7 @@ class ThreadScheduler;
 
 class Thread : public DLChainItem {
 private:
-    Thread(ThreadScheduler* scheduler);
+    Thread(ThreadScheduler* scheduler, VirtualMemory* vmem);
 
     virtual ~Thread();
 
@@ -33,6 +32,8 @@ public:
 
 private:
     ArchThreadInstance instance;
+
+    VirtualMemory* vmem;
 
     bool cpu_state_dirty = true;
     CPUState cpu_state;
@@ -54,6 +55,8 @@ public:
 
     Thread* create_thread(ThreadEntry entry, void* param, usize stack_size = DEFAULT_STACK_SIZE);
 
+    Thread* create_user_thread(ThreadEntry entry, VirtualMemory* vmem, void* param, void* stack, usize stack_size);
+
     void exit(Thread* thread);
 
     void NO_RETURN run();
@@ -65,6 +68,8 @@ public:
     void handle_exception(Exception* excpt);
 
     void init_scheduler();
+
+    inline Thread* current() { return current_thread; };
 
 public:
     static void init();

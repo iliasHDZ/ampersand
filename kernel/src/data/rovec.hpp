@@ -13,7 +13,7 @@ public:
     ROVec(const T* array, usize count)
         : count(count), array(array) {}
 
-    ROVec(const Vec<T>& vec) {
+    ROVec(Vec<T>& vec) {
         count = vec.size();
         array = vec.begin();
     }
