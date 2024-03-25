@@ -157,12 +157,16 @@ SyscallError FileSystemManager::mount(const char* rpath, FileSystem* fs, bool sh
     Inode dir;
     Path path = rpath;
 
-    SyscallError err = get_inode(&dir, path, nullptr);
-    if (err != ENOERR)
-        return err;
+    if (path.is_root())
+        dir = { .inode_id = 0, .filesystem = nullptr };
+    else {
+        SyscallError err = get_inode(&dir, path, nullptr);
+        if (err != ENOERR)
+            return err;
 
-    if (!S_ISDIR(dir.mode))
-        return ENOTDIR;
+        if (!S_ISDIR(dir.mode))
+            return ENOTDIR;
+    }
     
     Mount* mount = get_mount_at_inode(&dir);
 
@@ -175,7 +179,12 @@ SyscallError FileSystemManager::mount(const char* rpath, FileSystem* fs, bool sh
     Log::INFO("FileSystemManager") << "Mounted " << src << " on " << rpath << " type " << fs->get_name() << '\n';
 
     fs->set_dev_no(dev_counter++);
-    mounts.append(new Mount { dir, fs, should_delete_fs });
+    
+    Mount* mnt = new Mount { dir, fs, should_delete_fs };
+    mounts.append(mnt);
+
+    if (path.is_root())
+        rootmount = mnt;
 
     return ENOERR;
 }
@@ -213,6 +222,7 @@ SyscallError FileSystemManager::unmount(const char* rpath, bool force) {
         if (mounts[i] == mount) {
             delete mounts[i];
             mounts.remove(i);
+            break;
         }
     }
 

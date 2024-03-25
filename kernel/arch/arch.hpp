@@ -10,11 +10,14 @@ extern const char* arch_reg_names[ARCH_REG_COUNT];
 
 struct CPUState {
     usize regs[ARCH_REG_COUNT];
+    usize temp;
 
     usize a() const;
     usize b() const;
     usize c() const;
     usize d() const;
+
+    void set_a(usize v);
 
     usize pc() const;
     usize sp() const;

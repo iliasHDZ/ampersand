@@ -6,6 +6,7 @@
 enum class ArchThreadYieldStatus {
     AWAIT,
     TIMER,
+    SYSCALL,
     THREAD_EXIT
 };
 

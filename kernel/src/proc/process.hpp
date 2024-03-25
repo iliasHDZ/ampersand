@@ -9,6 +9,8 @@
 
 #define PROCESS_STACK_SIZE (128 * KiB)
 
+class ProcessManager;
+
 class Process : public DLChainItem {
 public:
     Process(usize pid);
@@ -20,8 +22,13 @@ public:
     SyscallError exec(FileDescription* file);
 
 private:
+    void close();
+
+private:
     Vec<Thread*> threads;
 
     usize pid;
     ProcessMemory* memory;
+
+    friend class ProcessManager;
 };

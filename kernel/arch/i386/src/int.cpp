@@ -642,6 +642,8 @@ void int_regs_to_cpu_state(CPUState* dst, int_regs* src) {
 
     dst->regs[ARCH_REG_EIP]    = src->eip;
     dst->regs[ARCH_REG_EFLAGS] = src->eflags;
+
+    dst->temp = (usize)src;
 }
 
 bool int_register_irq(u32 id, InterruptHandler handler, void* param) {
@@ -657,8 +659,15 @@ bool int_register_irq(u32 id, InterruptHandler handler, void* param) {
     return true;
 }
 
+void joking() {
+
+}
+
 extern "C" void int_isr_handler() {
     u32 id = int_isr_regs->int_no;
+
+    if (id == 0xC0)
+        joking();
 
     syscall_handler_func = nullptr;
 

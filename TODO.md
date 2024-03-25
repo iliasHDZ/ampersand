@@ -10,7 +10,7 @@
 - [ ] Text VGA block device
 
 ## Process syscalls
-- [ ] exit
+- [x] exit
 - [ ] uname
 - [ ] mmap
 - [ ] munmap

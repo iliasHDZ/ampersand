@@ -80,6 +80,10 @@ usize CPUState::bp() const {
     return regs[ARCH_REG_EBP];
 }
 
+void CPUState::set_a(usize v) {
+    ((int_regs*)temp)->eax = v;
+}
+
 void CPUState::log(bool err) const {
     OutputStream& o = (err ? Log::ERR() : Log::INFO()) << Out::phex(8);
 

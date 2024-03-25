@@ -11,13 +11,13 @@ typedef void(*ThreadEntry)(void*);
 
 class ThreadScheduler;
 
+class Process;
+
 class Thread : public DLChainItem {
 private:
-    Thread(ThreadScheduler* scheduler, VirtualMemory* vmem);
+    Thread(ThreadScheduler* scheduler, VirtualMemory* vmem, Process* process = nullptr);
 
     virtual ~Thread();
-
-    CPUState* get_cpu_state();
 
     void await(ThreadSignal* signal);
 
@@ -30,13 +30,22 @@ public:
 
     u32 get_id();
 
+    inline Process* get_process() { return process; };
+
+    CPUState* get_cpu_state();
+
+    CPUState* get_syscall_state();
+
 private:
     ArchThreadInstance instance;
 
     VirtualMemory* vmem;
 
+    Process* process;
+
     bool cpu_state_dirty = true;
     CPUState cpu_state;
+    CPUState syscall_state;
 
     ThreadSignal* signal = nullptr;
 
@@ -55,7 +64,7 @@ public:
 
     Thread* create_thread(ThreadEntry entry, void* param, usize stack_size = DEFAULT_STACK_SIZE);
 
-    Thread* create_user_thread(ThreadEntry entry, VirtualMemory* vmem, void* param, void* stack, usize stack_size);
+    Thread* create_user_thread(ThreadEntry entry, Process* process, VirtualMemory* vmem, void* param, void* stack, usize stack_size);
 
     void exit(Thread* thread);
 

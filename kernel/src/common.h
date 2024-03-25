@@ -126,6 +126,12 @@ inline T divceil(T num, T div) {
     return num / div;
 }
 
+template <typename T>
+inline void safe_copy(T* dst, T* src, usize count) {
+    for (usize i = 0; i < count; i++)
+        dst[i] = src[i];
+}
+
 #ifndef __INTELLISENSE__
 inline void* operator new(long unsigned int size) {
     return kmalloc(size);

@@ -13,7 +13,7 @@ public:
         array = nullptr;
         if (is_alloc_available()) {
             if (capacity > 0)
-                array = new T[capacity];
+                alloc_array();
             has_init = true;
         } else
             has_init = false;
@@ -23,47 +23,31 @@ public:
 
     ~Vec() {
         if (has_init && array)
-            kfree((void*)array);
+            dealloc_array();
     }
 
     Vec(const Vec& vec) {
         test_init();
     
-        count    = vec.count;
-        capacity = vec.capacity;
-        
-        array = new T[capacity];
-        memcpy(array, vec.array, count * sizeof(T));
+        resize_array(vec.count);
+        safe_copy(array, vec.array, count);
     }
 
     Vec& operator=(const Vec& vec) {
         test_init();
         if (has_init && array)
-            kfree((void*)array);
+            dealloc_array();
     
-        count    = vec.count;
-        capacity = vec.capacity;
-        
-        array = new T[capacity];
-        memcpy(array, vec.array, count * sizeof(T));
+        resize_array(vec.count);
+        safe_copy(array, vec.array, count);
         return *this;
-    }
-
-    void expand() {
-        test_init();
-        capacity += 16;
-        if (array)
-            array = (T*)krealloc((void*)array, sizeof(T) * capacity);
-        else
-            array = new T[capacity];
     }
 
     void append(T value) {
         test_init();
-        while (count >= capacity)
-            expand();
-
-        array[count++] = value;
+        
+        resize_array(count + 1);
+        array[count - 1] = value;
     }
 
     void remove(usize index) {
@@ -73,9 +57,10 @@ public:
         if (index >= count)
             panic("Vec: Cannot index Vec outside bounds");
 
-        count--;
-        for (usize i = index; i < count; i++)
-            array[i] = array[i + 1];
+        for (usize i = index + 1; i < count; i++)
+            array[i - 1] = array[i];
+
+        resize_array(count - 1);
     }
 
     usize index_of(T val) {
@@ -126,20 +111,64 @@ public:
     const inline static Vec empty = Vec(nullptr, 0);
 
 private:
+    void expand() {
+        test_init();
+        capacity += 16;
+        if (array)
+            array = (T*)krealloc((void*)array, sizeof(T) * capacity);
+        else
+            alloc_array();
+    }
+
     void test_init() {
         if (!has_init) {
             if (!is_alloc_available())
                 panic("Cannot use Vec with allocator not available!");
 
             if (capacity > 0)
-                array = (T*)kmalloc( sizeof(T) * capacity );
+                alloc_array();
             has_init = true;
         }
     }
 
+    void alloc_array() {
+        if (array != nullptr)
+            return;
+
+        array = (T*)kmalloc( sizeof(T) * capacity );
+        for (usize i = 0; i < count; i++)
+            array[i] = T();
+    }
+
+    void dealloc_array() {
+        if (array == nullptr)
+            return;
+
+        for (usize i = 0; i < count; i++)
+            array[i].~T();
+
+        kfree(array);
+        array = nullptr;
+    }
+
+    void resize_array(usize new_count) {
+        if (new_count < count) {
+            for (usize i = new_count; i < count; i++)
+                array[i].~T();
+        }
+
+        if (new_count > capacity)
+            expand();
+
+        if (count > new_count) {
+            for (usize i = count; i < new_count; i++)
+                array[i] = T();
+        }
+    }
+
 private:
-    usize count;
-    usize capacity;
+    usize count = 0;
+    usize capacity = 10;
     bool has_init;
     T* array;
 };

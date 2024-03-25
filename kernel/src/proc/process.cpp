@@ -36,7 +36,7 @@ SyscallError Process::exec(FileDescription* file) {
 
     void* stack = (void*)((0xC0000 - stack_pages) * ARCH_PAGE_SIZE);
 
-    Thread* thread = ThreadScheduler::get()->create_user_thread((ThreadEntry)info.entry, mem->get_vmem(), 0, stack, stack_pages * ARCH_PAGE_SIZE);
+    Thread* thread = ThreadScheduler::get()->create_user_thread((ThreadEntry)info.entry, this, mem->get_vmem(), 0, stack, stack_pages * ARCH_PAGE_SIZE);
 
     Vec<Thread*> thrds;
 
@@ -59,4 +59,9 @@ SyscallError Process::exec(FileDescription* file) {
         kthread_exit();
 
     return ENOERR;
+}
+
+void Process::close() {
+    for (auto thread : threads)
+        ThreadScheduler::get()->exit(thread);
 }

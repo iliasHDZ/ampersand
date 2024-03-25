@@ -1,6 +1,8 @@
 #include "thread.hpp"
 
 #include <logger.hpp>
+#include "process.hpp"
+#include "manager.hpp"
 
 static u32 thread_id_counter = 0;
 
@@ -10,8 +12,8 @@ static ThreadScheduler scheduler_instance;
 #pragma diag_suppress 144
 #endif
 
-Thread::Thread(ThreadScheduler* scheduler, VirtualMemory* vmem)
-    : scheduler(scheduler), vmem(vmem) {}
+Thread::Thread(ThreadScheduler* scheduler, VirtualMemory* vmem, Process* process)
+    : scheduler(scheduler), vmem(vmem), process(process) {}
 
 Thread::~Thread() {
     if (scheduler->current_thread == this)
@@ -28,6 +30,10 @@ CPUState* Thread::get_cpu_state() {
     }
 
     return &cpu_state;
+}
+
+CPUState* Thread::get_syscall_state() {
+    return &syscall_state;
 }
 
 void Thread::await(ThreadSignal* signal) {
@@ -69,8 +75,8 @@ Thread* ThreadScheduler::create_thread(ThreadEntry entry, void* param, usize sta
     return thread;
 }
 
-Thread* ThreadScheduler::create_user_thread(ThreadEntry entry, VirtualMemory* vmem, void* param, void* stack, usize stack_size) {
-    Thread* thread = new Thread(this, vmem);
+Thread* ThreadScheduler::create_user_thread(ThreadEntry entry, Process* process, VirtualMemory* vmem, void* param, void* stack, usize stack_size) {
+    Thread* thread = new Thread(this, vmem, process);
     
     thread->id = thread_id_counter++;
 
@@ -129,6 +135,13 @@ void ThreadScheduler::handle_yield(ArchThreadYieldStatus status) {
         CPUState* state = current_thread->get_cpu_state();
         current_thread->await((ThreadSignal*)state->a());
         run();
+        return;
+    }
+
+    if (status == ArchThreadYieldStatus::SYSCALL) {
+        current_thread->get_cpu_state();
+        current_thread->syscall_state = current_thread->cpu_state;
+        current_thread->resume();
         return;
     }
 

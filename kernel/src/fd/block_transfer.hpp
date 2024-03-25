@@ -89,19 +89,21 @@ private:
 
         // Access all the aligned blocks
         u64 aligned_blocks_count = last_block - first_aligned_block;
-        u64 blocks_accessed = access_blocks(dir, ptr, first_aligned_block, aligned_blocks_count);
+        if (aligned_blocks_count > 0) {
+            u64 blocks_accessed = access_blocks(dir, ptr, first_aligned_block, aligned_blocks_count);
 
-        ptr += blocks_accessed * block_size;
+            ptr += blocks_accessed * block_size;
 
-        if (blocks_accessed < aligned_blocks_count)
-            return (u64)ptr - (u64)buffer;
+            if (blocks_accessed < aligned_blocks_count)
+                return (u64)ptr - (u64)buffer;
+        }
 
         // If the limit is unaligned, a section of the limit block is accessed from the begin of the block to the limit itself
         if (limit & block_mask) {
             if (!access_block_section(dir, ptr, last_block, 0, limit & block_mask))
                 return (u64)ptr - (u64)buffer;
             
-            ptr += block_size - (offset & block_mask);
+            ptr += limit & block_mask;
         }
 
         return (u64)ptr - (u64)buffer;

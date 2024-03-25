@@ -62,42 +62,64 @@ void kernel_init(void*) {
     SyscallError err;
 
     err = FileSystemManager::get()->mkdir("/dev", S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH, nullptr);
-    if (err != ENOERR)
-        Log::INFO() << "test: " << get_error_message(err) << '\n';
-
-    err = FileSystemManager::get()->mkdir("/mnt", S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH, nullptr);
-    if (err != ENOERR)
-        Log::INFO() << "test: " << get_error_message(err) << '\n';
-
-    Log::INFO() << '\n';
-    FileSystemManager::get()->dbg_ls("/");
-    Log::INFO() << '\n';
-    FileSystemManager::get()->dbg_ls("/dev/");
-    Log::INFO() << '\n';
+    if (err != ENOERR) {
+        Log::ERR() << "Could not mkdir /dev: " << get_error_message(err) << '\n';
+        panic("Error while mounting root");
+    }
 
     err = FileSystemManager::get()->mount("/dev", DevFileSystem::get());
-    if (err != ENOERR)
-        Log::INFO() << "test: " << get_error_message(err) << '\n';
-    
-    FileSystemManager::get()->dbg_ls("/dev/");
-    Log::INFO() << '\n';
-
-    err = FileSystemManager::get()->mount("/mnt", "/dev/sdb");
     if (err != ENOERR) {
-        Log::INFO() << "test: " << get_error_message(err) << '\n';
-        return;
+        Log::ERR() << "Could not mount /dev: " << get_error_message(err) << '\n';
+        panic("Error while mounting root");
     }
-    
-    FileSystemManager::get()->dbg_ls("/mnt/bin/");
-    Log::INFO() << '\n';
 
     FileDescription* fd;
+    err = FileSystemManager::get()->open(&fd, "/dev/sdb", OPENF_READ | OPENF_WRITE, nullptr);
+    if (err != ENOERR) {
+        Log::ERR() << "Could not open /dev/sdb: " << get_error_message(err) << '\n';
+        panic("Error while mounting root");
+    }
 
-    err = FileSystemManager::get()->open(&fd, "/mnt/bin/test", 0, nullptr);
+    err = FileSystemManager::get()->unmount("/dev", true);
+    if (err != ENOERR) {
+        Log::ERR() << "Could not unmount /dev: " << get_error_message(err) << '\n';
+        panic("Error while mounting root");
+    }
+
+    err = FileSystemManager::get()->unmount("/", true);
+    if (err != ENOERR) {
+        Log::ERR() << "Could not unmount /: " << get_error_message(err) << '\n';
+        panic("Error while mounting root");
+    }
+
+    err = FileSystemManager::get()->mount("/", fd, "/dev/sdb");
+    if (err != ENOERR) {
+        Log::ERR() << "Could not mount / from /dev/sdb: " << get_error_message(err) << '\n';
+        panic("Error while mounting root");
+    }
+
+    err = FileSystemManager::get()->mkdir("/dev", S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH, nullptr);
+    if (err != ENOERR && err != EEXIST) {
+        Log::ERR() << "Could not mkdir /dev: " << get_error_message(err) << '\n';
+        panic("Error while mounting root");
+    }
+
+    err = FileSystemManager::get()->mount("/dev", DevFileSystem::get());
+    if (err != ENOERR) {
+        Log::ERR() << "Could not remount /dev: " << get_error_message(err) << '\n';
+        panic("Error while mounting root");
+    }
+    
+    FileSystemManager::get()->dbg_ls("/bin/");
+    Log::INFO() << '\n';
+
+    err = FileSystemManager::get()->open(&fd, "/bin/test", 0, nullptr);
     if (err != ENOERR) {
         Log::INFO() << "test: " << get_error_message(err) << '\n';
         return;
     }
+
+    ProcessManager::init();
 
     Process* process = ProcessManager::get()->create();
 
@@ -108,38 +130,6 @@ void kernel_init(void*) {
     }
     
     FileSystemManager::get()->close(fd);
-
-    /*
-    FileSystemManager::get()->dbg_ls("/mnt/");
-    Log::INFO() << '\n';
-    */
-
-    /*
-    FileSystemManager::get()->dbg_ls("/mnt/kernel/");
-    Log::INFO() << '\n';
-    
-    FileSystemManager::get()->dbg_ls("/mnt/kernel/src/");
-    Log::INFO() << '\n';
-
-    FileDescription* fd;
-
-    err = FileSystemManager::get()->open(&fd, "/mnt/kernel/src/main.cpp", OPENF_READ | OPENF_WRITE, nullptr);
-    if (err != ENOERR) {
-        Log::INFO() << "test: " << get_error_message(err) << '\n';
-        return;
-    }
-
-    fd->write((void*)"This text was written from the Ampersand kernel!", 0, 48);
-
-    char* buffer = new char[fd->get_size() + 1];
-    fd->read(buffer, 0, fd->get_size());
-
-    Log::INFO() << buffer << '\n';
-
-    FileSystemManager::get()->close(fd);
-    */
-
-    FileSystemManager::get()->unmount("/mnt");
 
     for (;;);
 }
@@ -180,10 +170,6 @@ extern "C" void kernel_main() {
     o << ")\n";
 
     arch_init();
-
-    arch_thread_set_syscall_handler([]() {
-        Log::INFO() << "Syscall!!\n";
-    });
 
     ThreadScheduler::init();
 

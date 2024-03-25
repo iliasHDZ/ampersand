@@ -18,12 +18,12 @@ endif()
 ##################
 ####  KERNEL  ####
 ##################
+
 set(CMAKE_BUILD_TYPE Debug)
 set(UNIT_TESTING_BEFORE_STARTUP 1)
 
 set(CMAKE_C_FLAGS   "-Wall -fno-pie -m32 -ffreestanding")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -fno-rtti")
-
 
 file(GLOB_RECURSE C_SRCS   ./kernel/src/**.c)
 file(GLOB_RECURSE CXX_SRCS ./kernel/src/**.cpp)
@@ -51,3 +51,13 @@ target_include_directories(kernel PUBLIC ./kernel)
 target_include_directories(kernel PUBLIC ./kernel/src)
 
 set_target_properties(kernel PROPERTIES LINK_FLAGS "-nostdlib -n -T ${CMAKE_SOURCE_DIR}/linker.ld")
+
+#########################
+####  USER PROGRAMS  ####
+#########################
+
+set(IMAGE_DIR ${CMAKE_CURRENT_LIST_DIR}/image)
+
+include(./user/libc/Build.cmake)
+
+include(./user/test/Build.cmake)

@@ -93,6 +93,7 @@ void kthread_await(ThreadSignal* signal) {
 void arch_thread_init() {
     int_register_irq(0xC0 - INT_EXCPT_COUNT, [](void*) {
         syscall_handler_func = (void*)syscall_handler;
+        arch_thread_invoke_yield(ArchThreadYieldStatus::SYSCALL);
     });
     
     int_register_irq(0xC1 - INT_EXCPT_COUNT, [](void*) {

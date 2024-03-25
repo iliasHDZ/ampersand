@@ -4,6 +4,9 @@ set -o xtrace
 
 source ./params.sh
 
+mkdir ./image
+mkdir ./image/bin
+
 PREV_PATH=$(pwd)
 cd "${BUILD_PATH}"
 
@@ -18,6 +21,10 @@ else
 fi
 
 cd "${PREV_PATH}"
+
+rm -rf image.img
+dd if=/dev/zero of=image.img bs=1M count=16
+mkfs.ext2 -O none -d ./image ./image.img
 
 cp "${BUILD_PATH}/kernel" "./iso/boot/kernel.bin"
 
