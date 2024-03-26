@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stream/terminal.hpp>
+#include <fd/blkdev.hpp>
 
 class VGATextDriver : public TerminalOutput {
 public:
@@ -29,4 +30,14 @@ protected:
 private:
     usize index;
 
+};
+
+class VGABlockDevice : public MemoryBlockDevice {
+public:
+    void* get_address() override;
+
+    u64 get_size() override;
+
+public:
+    static void init();
 };

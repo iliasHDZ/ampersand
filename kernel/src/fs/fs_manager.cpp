@@ -1,4 +1,5 @@
 #include "fs_manager.hpp"
+#include <fd/manager.hpp>
 #include "virtualfs.hpp"
 #include <logger.hpp>
 
@@ -138,7 +139,6 @@ SyscallError FileSystemManager::mount(const char* mntpath, const char* blkpath) 
 SyscallError FileSystemManager::mount(const char* mntpath, FileDescription* fd, const char* srcpath) {
     FileSystem* fs = create_fs_from_fd(fd, srcpath);
     if (fs == nullptr) {
-        close(fd);
         return EINVFS;
     }
 
@@ -146,7 +146,6 @@ SyscallError FileSystemManager::mount(const char* mntpath, FileDescription* fd, 
     if (err != ENOERR) {
         fs->unmount();
         delete fs;
-        close(fd);
         return err;
     }
 
@@ -208,10 +207,8 @@ SyscallError FileSystemManager::unmount(const char* rpath, bool force) {
                 return EBUSY;
         }
 
-        for (auto& openfd : openfds) {
-            if (openfd.inode.filesystem == mount->get_fs())
-                return EBUSY;
-        }
+        if (FileDescriptionManager::get()->is_filesystem_busy(mount->get_fs()))
+            return EBUSY;
     }
 
     mount->get_fs()->unmount();
@@ -286,11 +283,10 @@ SyscallError FileSystemManager::open(FileDescription** fdout, const char* rpath,
             return EACCES;
     }
 
-    OpenFileDescription* openfd = get_openfd_with_inode(&inode);
+    FileDescription* fd = FileDescriptionManager::get()->fetch_inode_fd(inode.inode_id, inode.filesystem);
 
-    if (openfd) {
-        openfd->refcount++;
-        *fdout = openfd->fd;
+    if (fd) {
+        *fdout = fd;
         return ENOERR;
     }
 
@@ -310,37 +306,22 @@ SyscallError FileSystemManager::open(FileDescription** fdout, const char* rpath,
         return EACCES;
     }
 
-    FileDescription* fd = fs->create_fd(&inode);
-    openfds.append({ fd, inode, 1 });
+    InodeFile* inof = fs->create_fd(&inode);
+    inof->set_inode_iden(inode.inode_id, fs);
+    
+    FileDescriptionManager::get()->save_fd(inof, FileDescriptionSource::FILESYSTEM);
 
     if (creds)
-        fd->may_exec = creds->may_exec(&inode);
+        inof->may_exec = creds->may_exec(&inode);
     else
-        fd->may_exec = true;
+        inof->may_exec = true;
     
-    *fdout = fd;
-
+    *fdout = inof;
     return ENOERR;
 }
 
-SyscallError FileSystemManager::close(FileDescription* fd) {
-    OpenFileDescription* openfd = get_openfd_with_fd(fd);
-    
-    if (openfd == nullptr)
-        return EBADF;
-
-    openfd->refcount--;
-    if (openfd->refcount == 0) {
-        openfd->inode.filesystem->free_fd(openfd->fd);
-
-        for (usize i = 0; i < openfds.size(); i++) {
-            if (&openfds[i] == openfd) {
-                openfds.remove(i);
-                break;
-            }
-        }
-    }
-
+SyscallError FileSystemManager::close(InodeFile* fd) {
+    fd->get_fs()->free_fd(fd);
     return ENOERR;
 }
 
@@ -527,24 +508,6 @@ Mount* FileSystemManager::get_mount_with_root(Inode* inode) {
 
         if (root == *inode)
             return mount;
-    }
-
-    return nullptr;
-}
-
-OpenFileDescription* FileSystemManager::get_openfd_with_inode(Inode* inode) {
-    for (auto& openfd : openfds) {
-        if (openfd.inode == *inode)
-            return &openfd;
-    }
-
-    return nullptr;
-}
-
-OpenFileDescription* FileSystemManager::get_openfd_with_fd(FileDescription* fd) {
-    for (auto& openfd : openfds) {
-        if (openfd.fd == fd)
-            return &openfd;
     }
 
     return nullptr;

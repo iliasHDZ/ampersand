@@ -29,7 +29,7 @@ Ext2FileSystem::~Ext2FileSystem() {
         delete inode_usage_bitmap;
 }
 
-FileDescription* Ext2FileSystem::create_fd(Inode* file) {
+InodeFile* Ext2FileSystem::create_fd(Inode* file) {
     Ext2FileDescription* fd = new Ext2FileDescription(this, file->inode_id);
     if (!fd->init()) {
         delete fd;
@@ -39,7 +39,7 @@ FileDescription* Ext2FileSystem::create_fd(Inode* file) {
     return fd;
 }
 
-void Ext2FileSystem::free_fd(FileDescription* fd) {
+void Ext2FileSystem::free_fd(InodeFile* fd) {
     Ext2FileDescription* ext2fd = (Ext2FileDescription*)fd;
 
     ext2fd->save();

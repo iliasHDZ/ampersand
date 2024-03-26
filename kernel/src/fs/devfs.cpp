@@ -17,7 +17,7 @@ void DevInode::to_inode(FileSystem* fs, Inode* out) const {
 DevFileSystem::DevFileSystem()
     : FileSystem("devfs") {}
 
-FileDescription* DevFileSystem::create_fd(Inode* file) {
+InodeFile* DevFileSystem::create_fd(Inode* file) {
     DevInode* device = get_device_with_id(file->inode_id);
 
     if (device == nullptr)
@@ -26,7 +26,7 @@ FileDescription* DevFileSystem::create_fd(Inode* file) {
     return device->device;
 }
 
-void DevFileSystem::free_fd(FileDescription* fd) {}
+void DevFileSystem::free_fd(InodeFile* fd) {}
 
 FSFileOpenMethod DevFileSystem::get_open_method(Inode* file) {
     if (file->inode_id == 1)

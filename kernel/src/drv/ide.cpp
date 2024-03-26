@@ -101,6 +101,10 @@ u64 IDEDevice::read_blocks(void* buf, u64 block_offset, u64 block_count) {
     if (block_offset >= size) return 0;
     if (block_count == 0) return 0;
 
+    if (buf == 0) {
+        asm("int $0x3");
+    }
+
     block_count = min(block_count, size - block_offset);
 
     if (channel->read_sectors(is_slave, block_offset, block_count, buf))
@@ -209,7 +213,6 @@ void IDEChannel::init() {
     }
 
     write(ATA_REG_CONTROL, 0);
-    kthread_create(run_manager_thread, (void*)this);
 
     char dev_name[] = "sd_";
 
@@ -226,27 +229,29 @@ static ThreadSignal ide_execute_commands_signal;
 static ThreadSignal ide_command_finished_signal;
 
 bool IDEChannel::read_sectors(u8 dev, u64 lba, u32 count, void* buffer) {
-    while (!command_queue.can_enqueue())
+    MutexLock lock(&mutex);
+
+    while (read(ATA_REG_STATUS) & ATA_SR_BSY)
         ;
+    
+    IDEAddressMode mode = set_access_section(dev, lba, count);
+    send_read_command(mode);
 
-    IDEAccessCommand cmd = {
-        .direction = IDEAccessCommand::READ,
-        .drive = dev,
-        .lba = lba,
-        .numsects = count,
-        .buffer = buffer
-    };
+    u16* buf = (u16*)buffer;
 
-    command_queue.enqueue(&cmd);
+    const char* err = nullptr;
 
-    kthread_emit(&ide_execute_commands_signal);
+    for (u32 sec = 0; sec < count; sec++) {
+        err = polling(1);
+        if (err) break;
 
-    while (!cmd.finished)
-        kthread_await(&ide_command_finished_signal);
+        for (u32 i = 0; i < 256; i++)
+            *(buf++) = arch_inw(base_port);
+    }
 
-    if (cmd.err) {
+    if (err) {
         Log::ERR("IDEChannel") << Out::dec() << "Failed to read from " << (channel_num ? "SECONDARY" : "PRIMARY") << ' ' << dev << ":\n";
-        Log::ERR("IDEChannel") << "  - " << cmd.err << '\n';
+        Log::ERR("IDEChannel") << "  - " << err << '\n';
         return false;
     }
 
@@ -254,27 +259,29 @@ bool IDEChannel::read_sectors(u8 dev, u64 lba, u32 count, void* buffer) {
 }
 
 bool IDEChannel::write_sectors(u8 dev, u64 lba, u32 count, void* buffer) {
-    while (!command_queue.can_enqueue())
+    MutexLock lock(&mutex);
+
+    while (read(ATA_REG_STATUS) & ATA_SR_BSY)
         ;
+    
+    IDEAddressMode mode = set_access_section(dev, lba, count);
+    send_write_command(mode);
 
-    IDEAccessCommand cmd = {
-        .direction = IDEAccessCommand::WRITE,
-        .drive = dev,
-        .lba = lba,
-        .numsects = count,
-        .buffer = buffer
-    };
+    u16* buf = (u16*)buffer;
 
-    command_queue.enqueue(&cmd);
+    const char* err = nullptr;
 
-    kthread_emit(&ide_execute_commands_signal);
+    for (u32 sec = 0; sec < count; sec++) {
+        err = polling(1);
+        if (err) break;
 
-    while (!cmd.finished)
-        kthread_await(&ide_command_finished_signal);
+        for (u32 i = 0; i < 256; i++)
+            arch_outw(base_port, *(buf++));
+    }
 
-    if (cmd.err) {
+    if (err) {
         Log::ERR("IDEChannel") << Out::dec() << "Failed to write to " << (channel_num ? "SECONDARY" : "PRIMARY") << ' ' << dev << ": \n";
-        Log::ERR("IDEChannel") << "  - " << cmd.err << '\n';
+        Log::ERR("IDEChannel") << "  - " << err << '\n';
         return false;
     }
 
@@ -389,46 +396,6 @@ const char* IDEChannel::polling(unsigned int advanced_check) {
     return 0;
 }
 
-const char* IDEChannel::read_sectors_raw(u8 dev, u64 lba, u8 count, void* buffer) {
-    while (read(ATA_REG_STATUS) & ATA_SR_BSY)
-        ;
-    
-    IDEAddressMode mode = set_access_section(dev, lba, count);
-    send_read_command(mode);
-
-    u16* buf = (u16*)buffer;
-
-    for (u32 sec = 0; sec < count; sec++) {
-        const char* err = polling(1);
-        if (err) return err;
-
-        for (u32 i = 0; i < 256; i++)
-            *(buf++) = arch_inw(base_port);
-    }
-
-    return nullptr;
-}
-
-const char* IDEChannel::write_sectors_raw(u8 dev, u64 lba, u8 count, void* buffer) {
-    while (read(ATA_REG_STATUS) & ATA_SR_BSY)
-        ;
-    
-    IDEAddressMode mode = set_access_section(dev, lba, count);
-    send_write_command(mode);
-
-    u16* buf = (u16*)buffer;
-
-    for (u32 sec = 0; sec < count; sec++) {
-        const char* err = polling(1);
-        if (err) return err;
-
-        for (u32 i = 0; i < 256; i++)
-            arch_outw(base_port, *(buf++));
-    }
-
-    return nullptr;
-}
-
 u8 IDEChannel::read(u8 reg) {
     u8 res;
     if (reg > 0x07 && reg < 0x0C)
@@ -488,53 +455,6 @@ void IDEChannel::read_buffer(u8 reg, u32* dst, usize count) {
     
     if (reg > 0x07 && reg < 0x0C)
         write(ATA_REG_CONTROL, 0);
-}
-
-void IDEChannel::manager_thread() {
-    while (true) {
-        kthread_await(&ide_execute_commands_signal);
-
-        if (!command_queue.can_dequeue())
-            continue;
-
-        IDEAccessCommand* cmd = command_queue.dequeue();
-
-        usize count = cmd->numsects;
-        usize lba   = cmd->lba;
-        u8* buffer  = (u8*)cmd->buffer;
-
-        const char* err = nullptr;
-
-        while (count > 0) {
-            u8 seccount = (u8)min(count, (usize)255);
-
-            if (cmd->direction == IDEAccessCommand::READ)
-                err = read_sectors_raw(cmd->drive, lba, seccount, (void*)buffer);
-            else
-                err = write_sectors_raw(cmd->drive, lba, seccount, (void*)buffer);
-
-            if (err) break;
-
-            lba += seccount;
-            buffer += 512 * seccount;
-
-            count -= seccount;
-        }
-
-        cmd->err = err;
-        cmd->finished = true;
-
-        kthread_emit(&ide_command_finished_signal);
-    }
-}
-
-void IDEChannel::run_manager_thread(void* channel) {
-    if (channel == nullptr) {
-        panic("IDEChannel: The manager thread recieved a nullptr param");
-        return;
-    }
-
-    ((IDEChannel*)channel)->manager_thread();
 }
 
 IDEController::IDEController(PCIDevice* pci_device)

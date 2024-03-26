@@ -1,9 +1,9 @@
 #pragma once
 
 #include "fs.hpp"
-#include <fd/blockdev.hpp>
+#include <fd/blkdev.hpp>
 #include <data/vec.hpp>
-#include <security/credentials.hpp>
+#include <proc/credentials.hpp>
 
 #define DEVFS_INODE_MAX_NAME_LEN 32
 
@@ -19,9 +19,9 @@ class DevFileSystem : public FileSystem {
 public:
     DevFileSystem();
     
-    FileDescription* create_fd(Inode* file) override;
+    InodeFile* create_fd(Inode* file) override;
 
-    void free_fd(FileDescription* fd) override;
+    void free_fd(InodeFile* fd) override;
 
     FSFileOpenMethod get_open_method(Inode* file) override;
 

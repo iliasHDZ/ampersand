@@ -3,8 +3,9 @@
 #include "pci/pci.hpp"
 
 #include <fd/block_transfer.hpp>
-#include <fd/blockdev.hpp>
+#include <fd/blkdev.hpp>
 #include <data/queue.hpp>
+#include <data/thread.hpp>
 
 class IDEChannel;
 
@@ -12,20 +13,6 @@ enum class IDEAddressMode {
     CHS,
     LBA28,
     LBA48
-};
-
-struct IDEAccessCommand {
-    enum IDEAccessDirection {
-        READ, WRITE
-    };
-
-    IDEAccessDirection direction;
-    u8 drive;
-    u64 lba;
-    u32 numsects;
-    void* buffer;
-    bool finished = false;
-    const char* err = nullptr;
 };
 
 class IDEDevice : public BlockTransferFileDescription<BlockDevice> {
@@ -58,7 +45,7 @@ public:
 class IDEChannel {
 public:
     inline IDEChannel(u8 channel_num)
-        : channel_num(channel_num), command_queue(32) {}
+        : channel_num(channel_num) {}
 
     void init();
 
@@ -77,20 +64,11 @@ private:
 
     void send_write_command(IDEAddressMode addr_mode, bool use_dma = false);
 
-    const char* read_sectors_raw(u8 dev, u64 lba, u8 count, void* buffer);
-
-    const char* write_sectors_raw(u8 dev, u64 lba, u8 count, void* buffer);
-
     u8 read(u8 reg);
     
     void write(u8 reg, u8 val);
     
     void read_buffer(u8 reg, u32* dst, usize count);
-
-    void manager_thread();
-
-private:
-    static void run_manager_thread(void*);
 
 public:
     u8 channel_num;
@@ -99,7 +77,7 @@ public:
     u16 ctrl_port;
     u16 bmst_port;
 
-    Queue<IDEAccessCommand*> command_queue;
+    Mutex mutex;
 
     IDEDevice devices[2] = { IDEDevice(this, 0), IDEDevice(this, 1) };
 };

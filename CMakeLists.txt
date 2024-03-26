@@ -49,6 +49,7 @@ endif()
 
 target_include_directories(kernel PUBLIC ./kernel)
 target_include_directories(kernel PUBLIC ./kernel/src)
+target_include_directories(kernel PUBLIC ./user/libc/include)
 
 set_target_properties(kernel PROPERTIES LINK_FLAGS "-nostdlib -n -T ${CMAKE_SOURCE_DIR}/linker.ld")
 

@@ -10,12 +10,13 @@
 #include "fs/fs_manager.hpp"
 #include "proc/manager.hpp"
 #include "fs/devfs.hpp"
+#include "drv/vga_text.hpp"
 
 #include "drv/debugout.hpp"
 
 #include <arch/arch.hpp>
-
 #include <logger.hpp>
+#include "fd/manager.hpp"
 
 extern ThreadSignal keyboard_input_signal;
 
@@ -58,6 +59,8 @@ void kernel_init(void*) {
     PCIManager::init();
 
     FileSystemManager::init();
+
+    VGABlockDevice::init();
 
     SyscallError err;
 
@@ -128,8 +131,8 @@ void kernel_init(void*) {
         Log::INFO() << "test: " << get_error_message(err) << '\n';
         return;
     }
-    
-    FileSystemManager::get()->close(fd);
+
+    FileDescriptionManager::get()->close(fd);
 
     for (;;);
 }

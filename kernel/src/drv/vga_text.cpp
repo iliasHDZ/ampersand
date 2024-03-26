@@ -2,6 +2,7 @@
 
 #include <arch/drv/vga.hpp>
 #include <mem/paging.hpp>
+#include <fs/devfs.hpp>
 
 static u8* vga_framebuffer = 0;
 
@@ -77,4 +78,18 @@ void VGATextDriver::init() {
 
 VGATextDriver* VGATextDriver::get() {
     return &vga_instance;
+}
+
+static VGABlockDevice vga_blkdev;
+
+void* VGABlockDevice::get_address() {
+    return vga_framebuffer;
+}
+
+u64 VGABlockDevice::get_size() {
+    return 80 * 25 * 2;
+}
+
+void VGABlockDevice::init() {
+    DevFileSystem::get()->add_block_device(&vga_blkdev, "vga");
 }

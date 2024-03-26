@@ -110,9 +110,9 @@ public:
 
     ~Ext2FileSystem();
 
-    FileDescription* create_fd(Inode* file) override;
+    InodeFile* create_fd(Inode* file) override;
 
-    void free_fd(FileDescription* fd) override;
+    void free_fd(InodeFile* fd) override;
 
     FSFileOpenMethod get_open_method(Inode* file) override;
 
@@ -249,7 +249,7 @@ struct PACKED_STRUCT ext2_inode_entry {
 
 // FIXME: The ext2_inode_entry in the file description does not sync up with the one that would be returned
 //        by read_inode_entry in the filesystem!
-class Ext2FileDescription : public BlockTransferFileDescription<FileDescription> {
+class Ext2FileDescription : public BlockTransferFileDescription<InodeFile> {
 public:
     inline Ext2FileDescription(Ext2FileSystem* fs, u32 inode_num)
         : filesystem(fs), inode_num(inode_num) {}

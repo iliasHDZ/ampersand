@@ -1,6 +1,6 @@
 #include <common.h>
 #include <fd/fd.hpp>
-#include <security/credentials.hpp>
+#include <proc/credentials.hpp>
 #include <data/path.hpp>
 #include <proc/error.hpp>
 #include "fs.hpp"
@@ -42,12 +42,6 @@ private:
     FileSystem* fs;
 };
 
-struct OpenFileDescription {
-    FileDescription* fd;
-    Inode inode;
-    usize refcount;
-};
-
 class FileSystemManager {
 public:
     FileSystemManager();
@@ -67,7 +61,7 @@ public:
 
     SyscallError open(FileDescription** fdout, const char* path, u32 flags, Credentials* creds);
 
-    SyscallError close(FileDescription* fd);
+    SyscallError close(InodeFile* fd);
 
     SyscallError link(const char* path, const char* newpath, Credentials* creds);
 
@@ -85,10 +79,6 @@ private:
     Mount* get_mount_at_inode(Inode* inode);
     
     Mount* get_mount_with_root(Inode* inode);
-
-    OpenFileDescription* get_openfd_with_inode(Inode* inode);
-
-    OpenFileDescription* get_openfd_with_fd(FileDescription* fd);
 
     SyscallError get_inode(Inode* inode_out, const Path& path, Credentials* creds);
 
@@ -109,8 +99,6 @@ private:
     Mount* rootmount = nullptr;
 
     Vec<Mount*> mounts;
-
-    Vec<OpenFileDescription> openfds;
 
     usize dev_counter = 0;
 };

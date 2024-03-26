@@ -32,13 +32,21 @@ void ProcessManager::exit(Process* process) {
     delete process;
 }
 
-usize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize d) {
+isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize d) {
     switch (a) {
     case SYSCALL_EXIT:
         process_to_be_closed = process;
         kthread_emit(&close_process);
         kthread_await(0);
         return 0;
+    case SYSCALL_READ:
+        return process->sys_read((isize)b, (void*)c, d);
+    case SYSCALL_WRITE:
+        return process->sys_write((isize)b, (void*)c, d);
+    case SYSCALL_OPEN:
+        return process->sys_open((const char*)b, c);
+    case SYSCALL_CLOSE:
+        return process->sys_close(b);
     }
 
     return 0;

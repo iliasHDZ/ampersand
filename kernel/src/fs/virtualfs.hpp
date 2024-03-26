@@ -30,9 +30,9 @@ class VirtualFs : public FileSystem {
 public:
     VirtualFs();
 
-    FileDescription* create_fd(Inode* file) override;
+    InodeFile* create_fd(Inode* file) override;
 
-    void free_fd(FileDescription* fd) override;
+    void free_fd(InodeFile* fd) override;
 
     FSFileOpenMethod get_open_method(Inode* file) override;
 

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "process.hpp"
-
-#define SYSCALL_EXIT 0
+#include <unistd.h>
 
 class ProcessManager {
 public:
@@ -12,7 +11,7 @@ public:
 
     void exit(Process* process);
 
-    usize syscall(Process* process, usize a, usize b, usize c, usize d);
+    isize syscall(Process* process, usize a, usize b, usize c, usize d);
 
 private:
     friend class Thread;

@@ -1,7 +1,32 @@
 #include "process.hpp"
+#include <fd/manager.hpp>
+#include <fs/fs_manager.hpp>
+#include <fcntl.h>
 #include "elf.hpp"
 
-Process::Process() {
+usize FileDescriptionHandle::read(void* dst, usize size) {
+    usize ret = fd->read(dst, access_ptr, size);
+    if (fd->has_size())
+        access_ptr += ret;
+
+    // TODO: Blocking until everything is read
+
+    return ret;
+}
+
+usize FileDescriptionHandle::write(void* src, usize size) {
+    usize ret = fd->write(src, access_ptr, size);
+    if (fd->has_size())
+        access_ptr += ret;
+
+    // TODO: Blocking until everything is written
+
+    return ret;
+}
+
+Process::Process()
+    : creds(0, 0)
+{
     memory = new ProcessMemory();
 }
 
@@ -60,10 +85,56 @@ SyscallError Process::exec(FileDescription* file) {
 }
 
 void Process::close() {
+    for (usize i = 0; i < fd_handles.size(); i++) {
+        if (fd_handles[i].open)
+            close_handle(i);
+    }
+
     for (auto thread : threads)
         ThreadScheduler::get()->exit(thread);
 }
 
 void Process::set_pid(usize pid) {
     this->pid = pid;
+}
+
+i32 Process::open_handle(FileDescription* fd, usize perms) {
+    for (usize i = 0; i < fd_handles.size(); i++) {
+        if (!fd_handles[i].open) {
+            FileDescriptionHandle* fdh = &fd_handles[i];
+
+            fdh->open = true;
+            fdh->fd = fd;
+            fdh->access_ptr = 0;
+
+            return i;
+        }
+    }
+
+    if (fd_handles.size() >= MAX_FD_COUNT)
+        return -EMFILE;
+
+    i32 ret = fd_handles.size();
+    fd_handles.append({ true, fd, 0 });
+
+    return ret;
+}
+
+bool Process::is_handle_open(i32 fd) {
+    if (fd_handles.size() <= fd)
+        return false;
+
+    return fd_handles[fd].open;
+}
+
+SyscallError Process::close_handle(i32 fd) {
+    FileDescriptionHandle* fdh = &fd_handles[fd];
+    if (!fdh->open)
+        return EBADF;
+    
+    SyscallError err = FileDescriptionManager::get()->close(fdh->fd);
+
+    fdh->open = false;
+    fdh->fd   = nullptr;
+    return err;
 }

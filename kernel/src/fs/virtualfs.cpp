@@ -46,11 +46,11 @@ VirtualFs::VirtualFs()
     link(&root, &root, "..");
 }
 
-FileDescription* VirtualFs::create_fd(Inode* file) {
+InodeFile* VirtualFs::create_fd(Inode* file) {
     return nullptr;
 }
 
-void VirtualFs::free_fd(FileDescription* fd) {
+void VirtualFs::free_fd(InodeFile* fd) {
     
 }
 
