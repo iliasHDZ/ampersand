@@ -63,6 +63,7 @@ usize LCHeap::get_block_size(void* ptr) {
 }
 
 void* LCHeap::malloc(usize size, u32 align) {
+
     LCHeapBlock* new_block = LCHeap_block_after((usize)base, align);
     
     LCHeapBlock* block = head;
@@ -83,6 +84,7 @@ void* LCHeap::malloc(usize size, u32 align) {
         }
 
         new_block = LCHeap_block_after(block->limit(), align);
+    
         prev  = block;
         block = block->next;
     }

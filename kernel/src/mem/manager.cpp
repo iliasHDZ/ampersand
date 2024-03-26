@@ -132,17 +132,11 @@ void MemoryManager::reserve_page(u64 idx) {
     msm->reserve_page(idx);
 }
 
-void joke() {
-
-}
-
 u64 MemoryManager::alloc_page() {
     for (u32 i = 0; i < section_count; i++) {
         u64 idx = sections[i].alloc_page();
         if (idx != 0)
             return idx;
-
-        joke();
     }
 
     panic("Out of memory!");

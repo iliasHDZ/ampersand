@@ -13,7 +13,7 @@ class ProcessManager;
 
 class Process : public DLChainItem {
 public:
-    Process(usize pid);
+    Process();
 
     ~Process();
 
@@ -24,10 +24,12 @@ public:
 private:
     void close();
 
+    void set_pid(usize pid);
+
 private:
     Vec<Thread*> threads;
 
-    usize pid;
+    usize pid = 0;
     ProcessMemory* memory;
 
     friend class ProcessManager;

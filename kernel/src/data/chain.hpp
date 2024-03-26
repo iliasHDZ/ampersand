@@ -40,6 +40,20 @@ public:
         head = item;
     }
 
+    void insert_after(T* ref, T* item) {
+        item->next = ref->next;
+        item->prev = ref;
+
+        ref->next->prev = item;
+        ref->next       = item;
+    }
+
+    void insert_before(T* ref, T* item) {
+        insert_after((T*)(ref->prev), item);
+        if (ref == head)
+            head = item;
+    }
+
     T* first() {
         return head;
     }

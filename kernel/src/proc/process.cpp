@@ -1,9 +1,7 @@
 #include "process.hpp"
 #include "elf.hpp"
 
-Process::Process(usize pid)
-    : pid(pid)
-{
+Process::Process() {
     memory = new ProcessMemory();
 }
 
@@ -64,4 +62,8 @@ SyscallError Process::exec(FileDescription* file) {
 void Process::close() {
     for (auto thread : threads)
         ThreadScheduler::get()->exit(thread);
+}
+
+void Process::set_pid(usize pid) {
+    this->pid = pid;
 }

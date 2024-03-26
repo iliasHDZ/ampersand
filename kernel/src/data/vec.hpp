@@ -8,49 +8,47 @@ template <typename T>
 class Vec {
 public:
     Vec(usize capacity)
-        : count(0), capacity(capacity), array(nullptr)
+        : count(0), capacity(capacity)
     {
-        array = nullptr;
-        if (is_alloc_available()) {
-            if (capacity > 0)
-                alloc_array();
-            has_init = true;
-        } else
-            has_init = false;
+        if (!is_alloc_available())
+            capacity = 0;
+
+        alloc_array();
     }
 
     Vec() : Vec(16) {}
 
     ~Vec() {
-        if (has_init && array)
+        if (array)
             dealloc_array();
     }
 
     Vec(const Vec& vec) {
-        test_init();
+        init();
     
         resize_array(vec.count);
-        safe_copy(array, vec.array, count);
+        if (array != nullptr)
+            safe_copy(array, vec.array, count);
     }
 
     Vec& operator=(const Vec& vec) {
-        test_init();
-        if (has_init && array)
-            dealloc_array();
+        init();
     
         resize_array(vec.count);
-        safe_copy(array, vec.array, count);
+        if (array != nullptr)
+            safe_copy(array, vec.array, count);
         return *this;
     }
 
     void append(T value) {
-        test_init();
+        init();
         
         resize_array(count + 1);
         array[count - 1] = value;
     }
 
     void remove(usize index) {
+        init();
         if (count == 0)
             return;
         
@@ -86,17 +84,17 @@ public:
     }
 
     T* begin() {
-        test_init();
+        init();
         return array;
     }
 
     T* end() {
-        test_init();
+        init();
         return array + count;
     }
 
     T& get(usize index) {
-        test_init();
+        init();
         if (index >= count)
             panic("Vec: Cannot index Vec outside bounds");
 
@@ -104,7 +102,7 @@ public:
     }
 
     inline T& operator[](usize index) {
-        test_init();
+        init();
         return get(index);
     }
 
@@ -112,7 +110,6 @@ public:
 
 private:
     void expand() {
-        test_init();
         capacity += 16;
         if (array)
             array = (T*)krealloc((void*)array, sizeof(T) * capacity);
@@ -120,19 +117,20 @@ private:
             alloc_array();
     }
 
-    void test_init() {
-        if (!has_init) {
+    void init() {
+        if (array == nullptr) {
             if (!is_alloc_available())
                 panic("Cannot use Vec with allocator not available!");
 
-            if (capacity > 0)
-                alloc_array();
-            has_init = true;
+            alloc_array();
         }
     }
 
     void alloc_array() {
         if (array != nullptr)
+            return;
+
+        if (capacity == 0)
             return;
 
         array = (T*)kmalloc( sizeof(T) * capacity );
@@ -160,15 +158,16 @@ private:
         if (new_count > capacity)
             expand();
 
-        if (count > new_count) {
+        if (new_count > count) {
             for (usize i = count; i < new_count; i++)
                 array[i] = T();
         }
+
+        count = new_count;
     }
 
 private:
     usize count = 0;
     usize capacity = 10;
-    bool has_init;
-    T* array;
+    T* array = nullptr;
 };

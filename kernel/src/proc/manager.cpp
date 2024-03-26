@@ -16,11 +16,10 @@ Process* ProcessManager::get_process(usize pid) {
 }
 
 Process* ProcessManager::create() {
-    Process* process = new Process(pid_counter++);
+    Process* process = new Process();
+    insert(process);
 
     Log::INFO("ProcessManager") << "Created process " << process->get_pid() << '\n';
-
-    processes.append(process);
 
     return process;
 }
@@ -39,8 +38,10 @@ usize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
         process_to_be_closed = process;
         kthread_emit(&close_process);
         kthread_await(0);
-        break;
+        return 0;
     }
+
+    return 0;
 }
 
 static void process_closer_thread(void* _) {
@@ -75,6 +76,25 @@ void ProcessManager::init_manager() {
     kthread_create(process_closer_thread, nullptr);
 
     arch_thread_set_syscall_handler(process_syscall_handler);
+}
+
+void ProcessManager::insert(Process* process) {
+    usize pid = 1;
+
+    for (auto& proc : processes) {
+        if (pid == proc.get_pid()) {
+            pid++;
+            continue;
+        }
+
+        process->set_pid(pid);
+        processes.insert_before(&proc, process);
+        
+        return;
+    }
+
+    process->set_pid(pid);
+    processes.append(process);
 }
 
 ProcessManager* ProcessManager::get() {

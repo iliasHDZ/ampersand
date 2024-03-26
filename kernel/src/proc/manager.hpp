@@ -19,6 +19,8 @@ private:
 
     void init_manager();
 
+    void insert(Process* process);
+
 public:
     static ProcessManager* get();
 
