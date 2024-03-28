@@ -74,7 +74,72 @@ i32 Process::sys_open(const char* path, isize oflags) {
 
 i32 Process::sys_close(i32 fd) {
     if (!is_handle_open(fd))
-        return EBADF;
+        return -EBADF;
     
     return close_handle(fd);
+}
+
+isize Process::sys_lseek(i32 fd, isize offset, u32 whence) {
+    if (!is_handle_open(fd))
+        return -EBADF;
+
+    FileDescriptionHandle* fdh = &fd_handles[fd];
+    if (!fdh->fd->has_size())
+        return -ESPIPE;
+    
+    switch (whence) {
+    case SEEK_SET:
+        fdh->access_ptr = offset;
+        break;
+    case SEEK_CUR:
+        fdh->access_ptr += offset;
+        break;
+    case SEEK_END:
+        fdh->access_ptr = fdh->fd->get_size() + offset;
+        break;
+    default:
+        return -EINVAL;
+    }
+
+    return fdh->access_ptr;
+}
+
+i32 Process::sys_pipe(i32* out) {
+    FileDescription* pipe = FileDescriptionManager::get()->create_pipe();
+
+    i32 rd_end = open_handle(pipe, OPENF_READ);
+    if (rd_end < 0) {
+        FileDescriptionManager::get()->close(pipe);
+        return rd_end;
+    }
+
+    i32 wr_end = open_handle(pipe, OPENF_WRITE);
+    if (wr_end < 0) {
+        FileDescriptionManager::get()->close(pipe);
+        return wr_end;
+    }
+
+    out[0] = rd_end;
+    out[1] = wr_end;
+    return 0;
+}
+
+i32 Process::sys_dup(i32 src) {
+    return duplicate_handle(src);
+}
+
+i32 Process::sys_dup2(i32 src, i32 dst) {
+    return duplicate_handle(src, dst);
+}
+
+i32 Process::sys_ioctl(i32 fdn, i32 request, usize* args) {
+    if (!is_handle_open(fdn))
+        return -EBADF;
+
+    FileDescription* fd = fd_handles[fdn].fd;
+
+    if (args == nullptr)
+        return fd->ioctl_count(request);
+
+    return fd->ioctl(request, args);
 }

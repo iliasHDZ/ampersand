@@ -14,6 +14,12 @@ public:
 
     virtual u64 write(void* in, u64 offset, u64 size) = 0;
 
+    virtual bool should_block();
+
+    virtual usize ioctl_count(isize request);
+
+    virtual isize ioctl(isize request, usize* args);
+
     bool may_exec = false;
 };
 

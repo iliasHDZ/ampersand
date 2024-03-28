@@ -51,7 +51,7 @@ target_include_directories(kernel PUBLIC ./kernel)
 target_include_directories(kernel PUBLIC ./kernel/src)
 target_include_directories(kernel PUBLIC ./user/libc/include)
 
-set_target_properties(kernel PROPERTIES LINK_FLAGS "-nostdlib -n -T ${CMAKE_SOURCE_DIR}/linker.ld")
+set_target_properties(kernel PROPERTIES LINK_FLAGS   "-nostdlib -n -T ${CMAKE_SOURCE_DIR}/linker.ld")
 
 #########################
 ####  USER PROGRAMS  ####
@@ -61,4 +61,4 @@ set(IMAGE_DIR ${CMAKE_CURRENT_LIST_DIR}/image)
 
 include(./user/libc/Build.cmake)
 
-include(./user/test/Build.cmake)
+include(./user/terminal/Build.cmake)

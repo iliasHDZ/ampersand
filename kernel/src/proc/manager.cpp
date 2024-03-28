@@ -47,6 +47,16 @@ isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
         return process->sys_open((const char*)b, c);
     case SYSCALL_CLOSE:
         return process->sys_close(b);
+    case SYSCALL_LSEEK:
+        return process->sys_lseek(b, c, d);
+    case SYSCALL_PIPE:
+        return process->sys_pipe((i32*)b);
+    case SYSCALL_DUP:
+        return process->sys_dup(b);
+    case SYSCALL_DUP2:
+        return process->sys_dup2(b, c);
+    case SYSCALL_IOCTL:
+        return process->sys_ioctl(b, c, (usize*)d);
     }
 
     return 0;

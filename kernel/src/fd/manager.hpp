@@ -6,7 +6,8 @@
 #include <proc/error.hpp>
 
 enum class FileDescriptionSource {
-    FILESYSTEM
+    FILESYSTEM,
+    PIPE
 };
 
 struct OpenFileDescription {
@@ -19,9 +20,13 @@ class FileDescriptionManager {
 public:
     FileDescription* fetch_inode_fd(usize inode_num, FileSystem* fs);
 
+    FileDescription* create_pipe();
+
     bool is_filesystem_busy(FileSystem* fs);
 
     void save_fd(FileDescription* fd, FileDescriptionSource src);
+
+    void open(FileDescription* fd);
 
     SyscallError close(FileDescription* fd);
 

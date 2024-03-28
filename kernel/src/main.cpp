@@ -116,15 +116,17 @@ void kernel_init(void*) {
     FileSystemManager::get()->dbg_ls("/bin/");
     Log::INFO() << '\n';
 
-    err = FileSystemManager::get()->open(&fd, "/bin/test", 0, nullptr);
+    err = FileSystemManager::get()->open(&fd, "/bin/terminal", 0, nullptr);
     if (err != ENOERR) {
-        Log::INFO() << "test: " << get_error_message(err) << '\n';
+        Log::INFO() << "terminal: " << get_error_message(err) << '\n';
         return;
     }
 
     ProcessManager::init();
 
     Process* process = ProcessManager::get()->create();
+    
+    cout.disable_terminal(VGATextDriver::get());
 
     err = process->exec(fd);
     if (err != ENOERR) {

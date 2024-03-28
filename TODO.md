@@ -7,7 +7,7 @@
 - [x] Paging
 - [x] Process management
 - [x] Elf executable loading
-- [ ] Text VGA block device
+- [x] Text VGA block device
 
 ## Process syscalls
 - [x] exit
@@ -15,14 +15,15 @@
 - [ ] mmap
 - [ ] munmap
 
-- [ ] open
-- [ ] close
-- [ ] read
-- [ ] write
-- [ ] lseek
+- [x] open
+- [x] close
+- [x] read
+- [x] write
+- [x] lseek
 - [ ] ftruncate
-- [ ] dup
-- [ ] dup2
+- [x] dup
+- [x] dup2
+- [ ] poll
 
 - [ ] getcwd
 - [ ] getpid
@@ -52,7 +53,7 @@
 - [ ] symlink
 - [ ] readlink
 
-- [ ] pipe
+- [x] pipe
 
 - [ ] waitpid
 - [ ] kill

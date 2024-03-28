@@ -10,8 +10,6 @@
 
 #define PROCESS_STACK_SIZE (128 * KiB)
 
-#define MAX_FD_COUNT 256
-
 class ProcessManager;
 
 struct FileDescriptionHandle {
@@ -19,6 +17,10 @@ struct FileDescriptionHandle {
     FileDescription* fd = nullptr;
     usize access_ptr = 0;
     usize perms = 0;
+
+    usize read_raw(void* dst, usize size);
+
+    usize write_raw(void* src, usize size);
 
     usize read(void* dst, usize size);
 
@@ -40,17 +42,28 @@ public:
     isize sys_write(i32 fd, void* buf, usize size);
     i32 sys_open(const char* path, isize oflags);
     i32 sys_close(i32 fd);
-
-    i32 open_handle(FileDescription* fd, usize perms);
+    isize sys_lseek(i32 fd, isize offset, u32 whence);
+    i32 sys_pipe(i32* out);
+    i32 sys_dup(i32 src);
+    i32 sys_dup2(i32 src, i32 dst);
+    i32 sys_ioctl(i32 fd, i32 request, usize* args);
 
 private:
     void close();
 
     void set_pid(usize pid);
 
+    bool is_valid_handle(i32 fd);
+
     bool is_handle_open(i32 fd);
 
+    i32 alloc_handle();
+
+    i32 open_handle(FileDescription* fd, usize perms);
+
     SyscallError close_handle(i32 fd);
+
+    i32 duplicate_handle(i32 src, i32 dst = -1);
 
 private:
     Vec<Thread*> threads;

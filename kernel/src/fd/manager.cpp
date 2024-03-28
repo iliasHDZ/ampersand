@@ -2,6 +2,8 @@
 
 #include <fs/fs_manager.hpp>
 
+#include "fifo.hpp"
+
 FileDescriptionManager fdm_instance;
 
 FileDescription* FileDescriptionManager::fetch_inode_fd(usize inode_num, FileSystem* fs) {
@@ -20,6 +22,13 @@ FileDescription* FileDescriptionManager::fetch_inode_fd(usize inode_num, FileSys
     return nullptr;
 }
 
+FileDescription* FileDescriptionManager::create_pipe() {
+    FIFO* pipe = new FIFO();
+    save_fd(pipe, FileDescriptionSource::PIPE);
+
+    return pipe;
+}
+
 bool FileDescriptionManager::is_filesystem_busy(FileSystem* fs) {
     for (auto& ofd : fds) {
         if (ofd.src != FileDescriptionSource::FILESYSTEM)
@@ -31,7 +40,16 @@ bool FileDescriptionManager::is_filesystem_busy(FileSystem* fs) {
 }
 
 void FileDescriptionManager::save_fd(FileDescription* fd, FileDescriptionSource src) {
-    fds.append(OpenFileDescription {src, 1, fd});
+    fds.append(OpenFileDescription {src, 0, fd});
+}
+
+void FileDescriptionManager::open(FileDescription* fd) {
+    for (usize i; i < fds.size(); i++) {
+        if (fds[i].fd == fd) {
+            fds[i].refcount++;
+            return;
+        }
+    }
 }
 
 SyscallError FileDescriptionManager::close(FileDescription* fd) {
@@ -48,7 +66,9 @@ SyscallError FileDescriptionManager::close(FileDescription* fd) {
     if (ofd == nullptr)
         return EBADF;
     
-    ofd->refcount--;
+    if (ofd->refcount > 0)
+        ofd->refcount--;
+    
     if (ofd->refcount > 0)
         return ENOERR;
 
@@ -57,6 +77,9 @@ SyscallError FileDescriptionManager::close(FileDescription* fd) {
     switch (ofd->src) {
     case FileDescriptionSource::FILESYSTEM:
         err = FileSystemManager::get()->close((InodeFile*)fd);
+        break;
+    case FileDescriptionSource::PIPE:
+        delete fd;
         break;
     default: break;
     }

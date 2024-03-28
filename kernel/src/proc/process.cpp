@@ -2,24 +2,57 @@
 #include <fd/manager.hpp>
 #include <fs/fs_manager.hpp>
 #include <fcntl.h>
+#include <limits.h>
 #include "elf.hpp"
 
-usize FileDescriptionHandle::read(void* dst, usize size) {
+usize FileDescriptionHandle::read_raw(void* dst, usize size) {
     usize ret = fd->read(dst, access_ptr, size);
     if (fd->has_size())
         access_ptr += ret;
+    return ret;
+}
 
-    // TODO: Blocking until everything is read
+usize FileDescriptionHandle::write_raw(void* src, usize size) {
+    usize ret = fd->write(src, access_ptr, size);
+    if (fd->has_size())
+        access_ptr += ret;
+    return ret;
+}
+
+usize FileDescriptionHandle::read(void* dst, usize size) {
+    u8* buf = (u8*)dst;
+
+    usize ret = read_raw(buf, size);
+
+    if (!fd->should_block())
+        return ret;
+
+    kthread_emit((ThreadSignal*)fd);
+
+    while (ret < size) {
+        kthread_await((ThreadSignal*)fd);
+        
+        ret += read_raw(buf + ret, size - ret);
+    }
 
     return ret;
 }
 
 usize FileDescriptionHandle::write(void* src, usize size) {
-    usize ret = fd->write(src, access_ptr, size);
-    if (fd->has_size())
-        access_ptr += ret;
+    u8* buf = (u8*)src;
 
-    // TODO: Blocking until everything is written
+    usize ret = write_raw(buf, size);
+
+    if (!fd->should_block())
+        return ret;
+
+    kthread_emit((ThreadSignal*)fd);
+
+    while (ret < size) {
+        kthread_await((ThreadSignal*)fd);
+        
+        ret += write_raw(buf + ret, size - ret);
+    }
 
     return ret;
 }
@@ -98,6 +131,20 @@ void Process::set_pid(usize pid) {
     this->pid = pid;
 }
 
+bool Process::is_valid_handle(i32 fd) {
+    return fd >= 0 && fd < OPEN_MAX;
+}
+
+bool Process::is_handle_open(i32 fd) {
+    if (fd < 0)
+        return false;
+
+    if (fd_handles.size() <= fd)
+        return false;
+
+    return fd_handles[fd].open;
+}
+
 i32 Process::open_handle(FileDescription* fd, usize perms) {
     for (usize i = 0; i < fd_handles.size(); i++) {
         if (!fd_handles[i].open) {
@@ -107,24 +154,19 @@ i32 Process::open_handle(FileDescription* fd, usize perms) {
             fdh->fd = fd;
             fdh->access_ptr = 0;
 
+            FileDescriptionManager::get()->open(fd);
             return i;
         }
     }
 
-    if (fd_handles.size() >= MAX_FD_COUNT)
+    if (fd_handles.size() >= OPEN_MAX)
         return -EMFILE;
 
     i32 ret = fd_handles.size();
     fd_handles.append({ true, fd, 0 });
 
+    FileDescriptionManager::get()->open(fd);
     return ret;
-}
-
-bool Process::is_handle_open(i32 fd) {
-    if (fd_handles.size() <= fd)
-        return false;
-
-    return fd_handles[fd].open;
 }
 
 SyscallError Process::close_handle(i32 fd) {
@@ -137,4 +179,30 @@ SyscallError Process::close_handle(i32 fd) {
     fdh->open = false;
     fdh->fd   = nullptr;
     return err;
+}
+
+i32 Process::duplicate_handle(i32 src, i32 dst) {
+    if (!is_handle_open(src))
+        return -EBADF;
+
+    if (dst != -1 && !is_valid_handle(dst))
+        return -EBADF;
+
+    if (dst != -1 && is_handle_open(dst)) {
+        if (close_handle(dst) != ENOERR)
+            return -EIO;
+    
+        fd_handles[dst] = fd_handles[src];
+        FileDescriptionManager::get()->open(fd_handles[src].fd);
+        return dst;
+    }
+
+    FileDescriptionHandle* fdh_src = &fd_handles[src];
+
+    dst = open_handle(fdh_src->fd, fdh_src->perms);
+    if (dst < 0)
+        return dst;
+
+    fd_handles[dst] = fd_handles[src];
+    return dst;
 }

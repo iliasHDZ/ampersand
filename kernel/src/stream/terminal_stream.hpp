@@ -11,6 +11,10 @@ class TerminalOutputStream : public OutputStream {
 public:
     void add_terminal(TerminalOutput* target);
 
+    void enable_terminal(TerminalOutput* target);
+
+    void disable_terminal(TerminalOutput* target);
+
     isize write(const void* data, usize size) override;
 
     void set_cursor(u32 x, u32 y);
@@ -39,5 +43,6 @@ public:
 
 private:
     TerminalOutput* targets[MAX_TERM_OUTPUT_TARGETS];
+    bool targets_enabled[MAX_TERM_OUTPUT_TARGETS];
     usize target_count = 0;
 };
