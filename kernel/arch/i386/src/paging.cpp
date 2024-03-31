@@ -121,7 +121,7 @@ bool I386VirtualMemory::map_page(u64 vir_paddr, u64 phy_paddr, usize perms) {
 
     u32 tab_ent = (phy_paddr << 12) | ARCH_PAGETAB_PRESENT;
 
-    if ((perms & VMEM_PAGE_WRITE) || (perms & VMEM_PAGE_EXEC))
+    if (perms & VMEM_PAGE_WRITE)
         tab_ent |= ARCH_PAGETAB_WRITE;
 
     table->entries[tab_idx] = tab_ent;

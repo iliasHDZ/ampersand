@@ -18,6 +18,17 @@ struct FileDescriptionHandle {
     usize access_ptr = 0;
     usize perms = 0;
 
+    inline FileDescriptionHandle() {
+        open = false;
+    }
+
+    inline FileDescriptionHandle(FileDescription* fd, usize perms, usize access_ptr = 0) {
+        open = true;
+        this->fd = fd;
+        this->perms = perms;
+        this->access_ptr = access_ptr;
+    }
+
     usize read_raw(void* dst, usize size);
 
     usize write_raw(void* src, usize size);
@@ -34,6 +45,8 @@ public:
     ~Process();
 
     inline usize get_pid() { return pid; };
+
+    inline ProcessMemory* get_memory() { return memory; };
 
     SyscallError exec(FileDescription* file);
 
@@ -57,13 +70,13 @@ private:
 
     bool is_handle_open(i32 fd);
 
-    i32 alloc_handle();
-
     i32 open_handle(FileDescription* fd, usize perms);
 
     SyscallError close_handle(i32 fd);
 
     i32 duplicate_handle(i32 src, i32 dst = -1);
+
+    Process* fork(Thread* caller);
 
 private:
     Vec<Thread*> threads;

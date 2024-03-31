@@ -69,6 +69,8 @@ public:
 
     u8* driver_map(u64 phy_addr, u64 size);
 
+    bool access_fault(AccessFault fault);
+
 public:
     static VirtualMemoryManager* get();
 

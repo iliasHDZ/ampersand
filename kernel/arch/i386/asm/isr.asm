@@ -42,6 +42,7 @@ isr_return:
     call eax
     cli
 
+
 .no_syscall:
     pop eax
     mov ds, ax

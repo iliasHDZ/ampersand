@@ -12,6 +12,7 @@
 #define SYSCALL_PIPE  0x05
 #define SYSCALL_DUP   0x06
 #define SYSCALL_DUP2  0x07
+#define SYSCALL_FORK  0x08
 
 #define SYSCALL_IOCTL 0x10
 #define SYSCALL_EXIT  0xff
@@ -41,6 +42,8 @@ int pipe(int fildes[2]);
 
 int dup(int fildes);
 int dup2(int fildes, int fildes2);
+
+pid_t fork(void);
 
 #ifdef __cplusplus
 }

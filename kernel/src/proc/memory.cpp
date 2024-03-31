@@ -1,11 +1,14 @@
 #include "memory.hpp"
 #include <mem/manager.hpp>
+#include <logger.hpp>
 
 MemorySegment::MemorySegment(u64 page_count, VMemPerms perms, bool shared)
     : pages(page_count), perms(perms), shared(shared) {}
 
-MemorySegment* MemorySegment::create(u64 page_count, VMemPerms perms, bool shared) {
+MemorySegment* MemorySegment::create(u64 page_count, VMemPerms perms, bool stack, bool shared) {
     MemorySegment* ret = new MemorySegment(page_count, perms, shared);
+
+    ret->stack = stack;
     
     u64 page = 1;
     for (u64 i = 0; i < page_count; i++) {
@@ -21,6 +24,12 @@ MemorySegment* MemorySegment::create(u64 page_count, VMemPerms perms, bool share
         return nullptr;
     }
 
+    return ret;
+}
+    
+MemorySegment* MemorySegment::create_copy(MemorySegment* segment) {
+    MemorySegment* ret = MemorySegment::create(segment->get_page_count(), segment->perms, segment->stack, segment->shared);
+    copy(ret, segment);
     return ret;
 }
 
@@ -41,6 +50,11 @@ VMemPerms MemorySegment::get_perms_for_proc(ProcessSegment* seg) const {
 }
 
 void MemorySegment::process_map(ProcessSegment* seg) {
+    if (psegments.size() >= 1) {
+        seg->set_segment(MemorySegment::create_copy(this));
+        return;
+    }
+
     bool prev_cow = copy_on_write();
 
     psegments.append(seg);
@@ -78,7 +92,8 @@ AccessFaultAction MemorySegment::access_fault(ProcessSegment* instigator, Access
     // TODO: Do a copy!
     panic("Copy on write not yet implemented!");
 
-    return AccessFaultAction::NONE;
+    instigator->set_segment(MemorySegment::create_copy(this));
+    return AccessFaultAction::CONTINUE;
 }
 
 bool MemorySegment::copy(MemorySegment* dst, MemorySegment* src) {
@@ -127,6 +142,8 @@ ProcessSegment::~ProcessSegment() {
 
 void ProcessSegment::update_mapping() {
     VirtualMemory* vmem = parent->get_vmem();
+
+    VirtualMemoryManager::get()->use(vmem);
 
     VMemPerms perms  = msegment->get_perms_for_proc(this);
     ROVec<u64> pages = msegment->get_pages();
@@ -197,4 +214,24 @@ ProcessSegment* ProcessMemory::get_segment_at(u64 base_page) {
     }
 
     return nullptr;
+}
+
+ProcessMemory* ProcessMemory::fork() {
+    ProcessMemory* dst = new ProcessMemory();
+
+    dst->vmem = VirtualMemoryManager::get()->create();
+
+    for (auto pseg : segments)
+        dst->map_segment(pseg->get_mem_segment(), pseg->get_pagerange());
+
+    return dst;
+}
+
+AccessFaultAction ProcessMemory::access_fault(AccessFault fault) {
+    for (auto pseg : segments)
+        if (pseg->get_pagerange().ptr_in_range(fault.address)) {
+            return pseg->get_mem_segment()->access_fault(pseg, fault);
+        }
+
+    return AccessFaultAction::SEGFAULT;
 }

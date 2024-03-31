@@ -19,11 +19,6 @@ extern "C" void _init_libc() {
 
 }
 
-u32 _kernel_syscall(u32 a, u32 b, u32 c, u32 d) {
-    asm("int $0xC0" : "=a" (a) : "a" (a), "b" (b), "c" (c), "d" (d));
-    return a;
-}
-
 void exit(int status) {
     _kernel_syscall(SYSCALL_EXIT, status, 0, 0);
     for (;;);
@@ -65,6 +60,11 @@ int dup2(int fildes, int fildes2) {
 
 int open(const char* path, int oflags) {
     int ret = _kernel_syscall(SYSCALL_OPEN, (u32)path, oflags, 0);
+    return _set_errno(ret) ? -1 : ret;
+}
+
+pid_t fork() {
+    int ret = _kernel_syscall(SYSCALL_FORK, 0, 0, 0);
     return _set_errno(ret) ? -1 : ret;
 }
 

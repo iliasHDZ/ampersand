@@ -15,6 +15,17 @@ static ThreadScheduler scheduler_instance;
 Thread::Thread(ThreadScheduler* scheduler, VirtualMemory* vmem, Process* process)
     : scheduler(scheduler), vmem(vmem), process(process) {}
 
+Thread::Thread(Thread* src, VirtualMemory* vmem, Process* proc) {
+    instance        = src->instance;
+    vmem            = vmem;
+    process         = proc;
+    cpu_state_dirty = src->cpu_state_dirty;
+    cpu_state       = src->cpu_state;
+    syscall_state   = src->syscall_state;
+    signal          = src->signal;
+    scheduler       = src->scheduler;
+}
+
 Thread::~Thread() {
     if (scheduler->current_thread == this)
         scheduler->current_thread = nullptr;
@@ -50,10 +61,9 @@ bool Thread::is_blocked() {
 }
 
 void NO_RETURN Thread::resume() {
-    cpu_state_dirty = true;
-
     VirtualMemoryManager::get()->use(vmem);
 
+    cpu_state_dirty = true;
     arch_thread_resume(&instance);
 }
 
@@ -69,6 +79,8 @@ Thread* ThreadScheduler::create_thread(ThreadEntry entry, void* param, usize sta
     thread->id = thread_id_counter++;
     thread->allocated_stack = kmalloc(stack_size);
 
+    Log::INFO("ThreadScheduler") << "Created kernel thread " << thread->id << '\n';
+
     arch_thread_create(&(thread->instance), (void*)entry, param, thread->allocated_stack, stack_size);
 
     threads.append(thread);
@@ -80,7 +92,22 @@ Thread* ThreadScheduler::create_user_thread(ThreadEntry entry, Process* process,
     
     thread->id = thread_id_counter++;
 
+    Log::INFO("ThreadScheduler") << "Created user thread " << thread->id << " for process " << thread->id << '\n';
+
     arch_thread_create(&(thread->instance), (void*)entry, param, stack, stack_size);
+
+    threads.append(thread);
+    return thread;
+}
+
+Thread* ThreadScheduler::fork(Thread* source, VirtualMemory* vmem, Process* proc) {
+    Thread* thread = new Thread(source, vmem, proc);
+
+    thread->vmem = vmem;
+    
+    thread->id = thread_id_counter++;
+
+    Log::INFO("ThreadScheduler") << "Forked thread " << thread->id << " from thread " << source->id << '\n';
 
     threads.append(thread);
     return thread;
@@ -124,6 +151,7 @@ void ThreadScheduler::emit(ThreadSignal* signal) {
 }
 
 void ThreadScheduler::handle_yield(ArchThreadYieldStatus status) {
+    current_thread->cpu_state_dirty = true;
     current_thread->vmem = VirtualMemoryManager::get()->get_current();
 
     if (status == ArchThreadYieldStatus::TIMER) {
@@ -141,7 +169,6 @@ void ThreadScheduler::handle_yield(ArchThreadYieldStatus status) {
     if (status == ArchThreadYieldStatus::SYSCALL) {
         current_thread->get_cpu_state();
         current_thread->syscall_state = current_thread->cpu_state;
-        current_thread->resume();
         return;
     }
 
@@ -168,7 +195,7 @@ void ThreadScheduler::handle_exception(Exception* excpt) {
 
     Log::ERR() << "Calltrace:\n";
 
-    while (*bp) {
+    while (bp && *bp) {
         Log::ERR() << Out::phex(8) << "  - " << bp[1] << '\n';
         bp = (usize*)*bp;
     }

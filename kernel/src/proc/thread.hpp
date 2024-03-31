@@ -17,6 +17,8 @@ class Thread : public DLChainItem {
 private:
     Thread(ThreadScheduler* scheduler, VirtualMemory* vmem, Process* process = nullptr);
 
+    Thread(Thread* src, VirtualMemory* vmem, Process* proc);
+
     virtual ~Thread();
 
     void await(ThreadSignal* signal);
@@ -65,6 +67,8 @@ public:
     Thread* create_thread(ThreadEntry entry, void* param, usize stack_size = DEFAULT_STACK_SIZE);
 
     Thread* create_user_thread(ThreadEntry entry, Process* process, VirtualMemory* vmem, void* param, void* stack, usize stack_size);
+
+    Thread* fork(Thread* source, VirtualMemory* vmem, Process* proc);
 
     void exit(Thread* thread);
 

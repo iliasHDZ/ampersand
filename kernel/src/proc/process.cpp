@@ -1,6 +1,7 @@
 #include "process.hpp"
 #include <fd/manager.hpp>
 #include <fs/fs_manager.hpp>
+#include <logger.hpp>
 #include <fcntl.h>
 #include <limits.h>
 #include "elf.hpp"
@@ -82,7 +83,7 @@ SyscallError Process::exec(FileDescription* file) {
 
     u64 stack_pages = PROCESS_STACK_SIZE / ARCH_PAGE_SIZE;
 
-    MemorySegment* mseg = MemorySegment::create(stack_pages, VMEM_PAGE_READ | VMEM_PAGE_WRITE);
+    MemorySegment* mseg = MemorySegment::create(stack_pages, VMEM_PAGE_READ | VMEM_PAGE_WRITE, true);
 
     if (mem->map_segment(mseg, PageRange::base_limit(0xC0000 - stack_pages, 0xC0000)) == nullptr) {
         delete mem;
@@ -106,7 +107,6 @@ SyscallError Process::exec(FileDescription* file) {
         else
             current_in_threads = true;
     }
-
     threads = thrds;
     delete memory;
     memory = mem;
@@ -163,7 +163,7 @@ i32 Process::open_handle(FileDescription* fd, usize perms) {
         return -EMFILE;
 
     i32 ret = fd_handles.size();
-    fd_handles.append({ true, fd, 0 });
+    fd_handles.append(FileDescriptionHandle(fd, perms));
 
     FileDescriptionManager::get()->open(fd);
     return ret;
@@ -204,5 +204,27 @@ i32 Process::duplicate_handle(i32 src, i32 dst) {
         return dst;
 
     fd_handles[dst] = fd_handles[src];
+    return dst;
+}
+
+Process* Process::fork(Thread* caller) {
+    Process* dst = new Process();
+
+    dst->creds  = creds;
+    dst->memory = memory->fork();
+
+    for (int i = 0; i < fd_handles.size(); i++) {
+        if (!fd_handles[i].open) {
+            dst->fd_handles.append(FileDescriptionHandle());
+            continue;
+        }
+
+        FileDescriptionHandle* fdh_src = &fd_handles[i];
+
+        FileDescriptionManager::get()->open(fdh_src->fd);
+        dst->fd_handles.append(FileDescriptionHandle(fdh_src->fd, fdh_src->perms, fdh_src->access_ptr));
+    }
+
+    dst->threads.append(ThreadScheduler::get()->fork(caller, dst->memory->get_vmem(), dst));
     return dst;
 }

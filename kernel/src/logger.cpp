@@ -8,6 +8,7 @@ TerminalOutputStream& Log::INFO(const char* mod) {
     if (mod != nullptr)
         cout << mod << ": ";
     cout.set_fg(LOGGER_COLOR);
+    cout << Out::dec();
     return cout;
 }
 
@@ -16,6 +17,7 @@ TerminalOutputStream& Log::WARN(const char* mod) {
     cout.set_fg(LOGGER_WARN_COLOR);
     if (mod != nullptr)
         cout << mod << ": ";
+    cout << Out::dec();
     return cout;
 }
 
@@ -24,5 +26,6 @@ TerminalOutputStream& Log::ERR(const char* mod) {
     cout.set_fg(LOGGER_ERR_COLOR);
     if (mod != nullptr)
         cout << mod << ": ";
+    cout << Out::dec();
     return cout;
 }

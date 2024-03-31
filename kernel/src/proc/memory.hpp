@@ -6,7 +6,7 @@
 class ProcessSegment;
 
 enum class AccessFaultAction {
-    NONE,
+    CONTINUE,
     SEGFAULT
 };
 
@@ -15,7 +15,9 @@ private:
     MemorySegment(u64 page_count, VMemPerms perms, bool shared = false);
 
 public:
-    static MemorySegment* create(u64 page_count, VMemPerms perms, bool shared = false);
+    static MemorySegment* create(u64 page_count, VMemPerms perms, bool stack = false, bool shared = false);
+    
+    static MemorySegment* create_copy(MemorySegment* segment);
 
     ~MemorySegment();
 
@@ -40,6 +42,7 @@ public:
     inline bool should_delete() const { return psegments.size() == 0; };
 
 private:
+    bool stack;
     bool shared;
     VMemPerms perms;
 
@@ -57,6 +60,8 @@ public:
 
     inline ProcessMemory* get_memory() { return parent; };
     inline PageRange get_pagerange()   { return prange; };
+    
+    inline MemorySegment* get_mem_segment() { return msegment; };
 
     void update_mapping();
 
@@ -82,6 +87,10 @@ public:
     void unmap_all();
 
     ProcessSegment* get_segment_at(u64 base_page);
+
+    ProcessMemory* fork();
+
+    AccessFaultAction access_fault(AccessFault fault);
 
     inline VirtualMemory* get_vmem() { return vmem; };
 

@@ -1,6 +1,7 @@
 #include "manager.hpp"
 
 #include <logger.hpp>
+#include <data/thread.hpp>
 
 static ProcessManager pm_instance;
 
@@ -10,6 +11,14 @@ static Process* process_to_be_closed = nullptr;
 Process* ProcessManager::get_process(usize pid) {
     for (auto& process : processes)
         if (process.get_pid() == pid)
+            return &process;
+
+    return nullptr;
+}
+
+Process* ProcessManager::get_process_with_vmem(VirtualMemory* vmem) {
+    for (auto& process : processes)
+        if (process.memory->get_vmem() == vmem)
             return &process;
 
     return nullptr;
@@ -32,11 +41,21 @@ void ProcessManager::exit(Process* process) {
     delete process;
 }
 
+Process* ProcessManager::fork(Process* process, Thread* caller) {
+    Process* ret = process->fork(caller);
+    insert(ret);
+
+    Log::INFO("ProcessManager") << "Forked process " << ret->get_pid() << " from process " << process->get_pid() << '\n';
+
+    return ret;
+}
+
 isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize d) {
+    Thread* prev = ThreadScheduler::get()->current();
+
     switch (a) {
     case SYSCALL_EXIT:
-        process_to_be_closed = process;
-        kthread_emit(&close_process);
+        run_extcmd(EXTCMD_EXIT, process);
         kthread_await(0);
         return 0;
     case SYSCALL_READ:
@@ -55,6 +74,14 @@ isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
         return process->sys_dup(b);
     case SYSCALL_DUP2:
         return process->sys_dup2(b, c);
+    case SYSCALL_FORK: {
+        isize ret = run_extcmd(EXTCMD_FORK, process);
+
+        if (ProcessManager::get()->get_process_with_vmem(VirtualMemoryManager::get()->get_current()) != process)
+            return 0;
+        
+        return ret;
+    }
     case SYSCALL_IOCTL:
         return process->sys_ioctl(b, c, (usize*)d);
     }
@@ -62,17 +89,74 @@ isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
     return 0;
 }
 
-static void process_closer_thread(void* _) {
-    while (true) {
-        kthread_await(&close_process);
+void ProcessManager::access_fault(Process* process, AccessFault fault) {
+    AccessFaultAction action = process->get_memory()->access_fault(fault);
 
-        if (process_to_be_closed == nullptr)
-            continue;
-
-        ProcessManager::get()->exit(process_to_be_closed);
-        process_to_be_closed = nullptr;
+    if (action == AccessFaultAction::SEGFAULT) {
+        run_extcmd(EXTCMD_EXIT, process);
+        kthread_await(0);
     }
 }
+
+static bool extcmd_fork = false;
+
+isize ProcessManager::handle_extcmd(usize cmd, Process* proc, Thread* caller) {
+    switch (cmd) {
+    case EXTCMD_EXIT:
+        exit(proc);
+        return 0;
+    case EXTCMD_FORK:
+        extcmd_fork = true;
+        return fork(proc, caller)->get_pid();
+    }
+}
+
+static ThreadSignal extcmd_run_signal;
+static ThreadSignal extcmd_finish_signal;
+
+static Mutex extcmd_mutex;
+
+static usize    extcmd_cmd;
+static Process* extcmd_proc;
+static Thread*  extcmd_caller;
+static bool     extcmd_finished;
+static isize    extcmd_return;
+
+isize ProcessManager::run_extcmd(usize cmd, Process* proc) {
+    extcmd_mutex.lock();
+
+    extcmd_cmd      = cmd;
+    extcmd_proc     = proc;
+    extcmd_caller   = ThreadScheduler::get()->current();
+    extcmd_finished = false;
+
+    kthread_emit(&extcmd_run_signal);
+
+    while (!extcmd_finished)
+        kthread_await(&extcmd_finish_signal);
+
+    if (extcmd_fork)
+        extcmd_fork = false;
+    else
+        extcmd_mutex.unlock();
+
+    return extcmd_return;
+}
+
+static void process_extcmd_thread(void* _) {
+    while (true) {
+        kthread_await(&extcmd_run_signal);
+        if (extcmd_finished)
+            continue;
+
+        extcmd_return   = ProcessManager::get()->handle_extcmd(extcmd_cmd, extcmd_proc, extcmd_caller);
+        extcmd_finished = true;
+
+        kthread_emit(&extcmd_finish_signal);
+    }
+}
+
+Mutex set_a_mutex;
 
 static void process_syscall_handler() {
     Thread* current = ThreadScheduler::get()->current();
@@ -87,11 +171,13 @@ static void process_syscall_handler() {
 
     usize ret = ProcessManager::get()->syscall(process, state->a(), state->b(), state->c(), state->d());
 
+    set_a_mutex.lock();
     state->set_a(ret);
+    set_a_mutex.unlock();
 }
 
 void ProcessManager::init_manager() {
-    kthread_create(process_closer_thread, nullptr);
+    kthread_create(process_extcmd_thread, nullptr);
 
     arch_thread_set_syscall_handler(process_syscall_handler);
 }

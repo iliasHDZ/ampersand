@@ -4,6 +4,8 @@
 
 #include <arch/exception.hpp>
 
+#include <mem/paging.hpp>
+
 #include "thread.hpp"
 
 #include "drv/pic.hpp"
@@ -659,15 +661,14 @@ bool int_register_irq(u32 id, InterruptHandler handler, void* param) {
     return true;
 }
 
-void joking() {
-
+inline u32 get_cr2() {
+    u32 ret;
+    asm ("movl %%cr2, %0\n" :"=r"(ret));
+    return ret;
 }
 
 extern "C" void int_isr_handler() {
     u32 id = int_isr_regs->int_no;
-
-    if (id == 0xC0)
-        joking();
 
     syscall_handler_func = nullptr;
 
@@ -677,6 +678,18 @@ extern "C" void int_isr_handler() {
     if (id < INT_EXCPT_COUNT) {
         CPUState state;
         int_regs_to_cpu_state(&state, int_isr_regs);
+
+        if (id == 14) {
+            AccessFault fault;
+
+            fault.address = get_cr2();
+            fault.type = (int_isr_regs->err_code & 1) ? AccessFault::READ_ONLY : AccessFault::NOT_PRESENT;
+
+            Log::ERR() << Out::phex(8) << "Access Fault at " << fault.address << " because " << ((fault.type == AccessFault::READ_ONLY) ? "READ_ONLY" : "NOT_PRESENT") << '\n';
+
+            // if (VirtualMemoryManager::get()->access_fault(fault))
+            //    return;
+        }
 
         Exception excpt(int_isr_names[id], &state);
 

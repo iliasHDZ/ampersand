@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common.h>
+#include <logger.hpp>
 
 class Mutex {
 public:
@@ -25,6 +26,12 @@ public:
         : mutex(mutex)
     {
         mutex->lock();
+    }
+    
+    inline MutexLock(Mutex& mutex)
+        : mutex(&mutex)
+    {
+        mutex.lock();
     }
 
     inline ~MutexLock() {

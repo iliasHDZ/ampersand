@@ -135,8 +135,6 @@ void kernel_init(void*) {
     }
 
     FileDescriptionManager::get()->close(fd);
-
-    for (;;);
 }
 
 static DebugTerminalOutput dbg;

@@ -1,6 +1,7 @@
 #include "paging.hpp"
 #include "memory.hpp"
 #include "manager.hpp"
+#include <proc/manager.hpp>
 
 static VirtualMemoryManager vmm_instance;
 
@@ -84,6 +85,14 @@ u8* VirtualMemoryManager::driver_map(u64 phy_addr, u64 size) {
     u64 vir_paddr = kmem->driver_map(prange.base, prange.page_count());
 
     return (u8*)((usize)vir_paddr * ARCH_PAGE_SIZE) + (phy_addr % ARCH_PAGE_SIZE);
+}
+
+bool VirtualMemoryManager::access_fault(AccessFault fault) {
+    Process* process = ProcessManager::get()->get_process_with_vmem(current_vmem);
+    if (process == nullptr)
+        return false;
+    
+    ProcessManager::get()->access_fault(process, fault);
 }
 
 VirtualMemoryManager* VirtualMemoryManager::get() {

@@ -2,6 +2,8 @@
 #include <fd/manager.hpp>
 #include <fs/fs_manager.hpp>
 #include <fcntl.h>
+#include <logger.hpp>
+#include <data/thread.hpp>
 
 isize Process::sys_read(i32 fd, void* buf, usize size) {
     if (!is_handle_open(fd))
@@ -68,7 +70,7 @@ i32 Process::sys_open(const char* path, isize oflags) {
         FileDescriptionManager::get()->close(fd);
         return fd_num;
     }
-    
+
     return fd_num;
 }
 
