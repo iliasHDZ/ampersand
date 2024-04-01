@@ -11,9 +11,9 @@ public:
     CircularBuffer(const CircularBuffer&) = delete;
     CircularBuffer& operator=(const CircularBuffer&) = delete;
 
-    u64 read(void* out, u64 offset, u64 size);
+    u64 read(void* out, u64 size);
 
-    u64 write(void* in, u64 offset, u64 size);
+    u64 write(void* in, u64 size);
 
     bool can_read() const;
 

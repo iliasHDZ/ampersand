@@ -3,6 +3,10 @@
 
 static ThreadSignal fd_event;
 
+FileDescription::~FileDescription() {
+
+}
+
 bool FileDescription::has_size() {
     return false;
 }

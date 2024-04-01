@@ -32,5 +32,8 @@ public:
     int get_height() override;
 
 private:
+    char map_color(char bg, char fg);
+
+private:
     int fd;
 };

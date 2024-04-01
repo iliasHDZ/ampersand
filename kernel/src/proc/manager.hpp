@@ -5,6 +5,7 @@
 
 #define EXTCMD_EXIT 0
 #define EXTCMD_FORK 1
+#define EXTCMD_EXEC 2
 
 class ProcessManager {
 public:
@@ -25,12 +26,12 @@ public:
     // Extern commands (extcmd) are commands that are to be run
     // outside the process thread because it might modify the thread.
     // .ex: exit, fork, exec
-    isize handle_extcmd(usize cmd, Process* proc, Thread* caller);
+    isize handle_extcmd(usize cmd, Process* proc, Thread* caller, void* param);
+
+    isize run_extcmd(usize cmd, Process* proc, void* param = nullptr);
 
 private:
     friend class Thread;
-
-    isize run_extcmd(usize cmd, Process* proc);
 
     void init_manager();
 

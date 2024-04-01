@@ -16,7 +16,7 @@ static bool _set_errno(ssize_t value) {
 }
 
 extern "C" void _init_libc() {
-
+    
 }
 
 void exit(int status) {
@@ -65,6 +65,11 @@ int open(const char* path, int oflags) {
 
 pid_t fork() {
     int ret = _kernel_syscall(SYSCALL_FORK, 0, 0, 0);
+    return _set_errno(ret) ? -1 : ret;
+}
+
+int exec(const char* path) {
+    int ret = _kernel_syscall(SYSCALL_EXEC, (u32)path, 0, 0);
     return _set_errno(ret) ? -1 : ret;
 }
 

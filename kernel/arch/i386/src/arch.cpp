@@ -1,4 +1,5 @@
 #include <arch/arch.hpp>
+#include <arch/keyboard.hpp>
 #include "int.hpp"
 #include "thread.hpp"
 #include "timer.hpp"
@@ -108,7 +109,7 @@ void arch_idle_cpu() {
     int_enable();
 
     while (1)
-            asm("hlt");
+        asm("hlt");
 }
 
 void arch_lock_cpu() {
@@ -117,7 +118,11 @@ void arch_lock_cpu() {
     for (;;);
 }
 
-ThreadSignal keyboard_input_signal;
+KeyboardTransmitCallback keyboard_callback = nullptr;
+
+void arch_set_keyboard_callback(KeyboardTransmitCallback cb) {
+    keyboard_callback = cb;
+}
 
 void arch_init() {
     auto pic = PIC8259Pair::get();
@@ -132,7 +137,8 @@ void arch_init() {
     arch_thread_init();
 
     int_register_irq(1, [](void*) {
-        inb(0x60);
-        kthread_emit(&keyboard_input_signal);
+        u8 sc = inb(0x60);
+        if (keyboard_callback)
+            keyboard_callback(sc);
     });
 }

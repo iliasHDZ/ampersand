@@ -50,6 +50,15 @@ void arch_thread_exit() {
     asm("int $0xC2");
 }
 
+void kthread_await(ThreadSignal* signal) {
+    asm("int $0xC1\n" : : "a" (signal));
+}
+
+extern "C" void panic(const char* err) {
+    asm("int $0xC3\n" : : "a" (err));
+    arch_lock_cpu();
+}
+
 void NO_RETURN arch_thread_resume(ArchThreadInstance* ins) {
     current_running_thread = ins;
 
@@ -86,10 +95,6 @@ static void arch_thread_invoke_yield(ArchThreadYieldStatus status) {
     yield_handler(status);
 }
 
-void kthread_await(ThreadSignal* signal) {
-    asm("int $0xC1\n" : : "a" (signal));
-}
-
 void arch_thread_init() {
     int_register_irq(0xC0 - INT_EXCPT_COUNT, [](void*) {
         syscall_handler_func = (void*)syscall_handler;
@@ -102,6 +107,14 @@ void arch_thread_init() {
     
     int_register_irq(0xC2 - INT_EXCPT_COUNT, [](void*) {
         arch_thread_invoke_yield(ArchThreadYieldStatus::THREAD_EXIT);
+    });
+    
+    int_register_irq(0xC3 - INT_EXCPT_COUNT, [](void*) {
+        CPUState state;
+        int_regs_to_cpu_state(&state, int_isr_regs);
+
+        Exception excpt((char*)state.a(), &state);
+        arch_thread_invoke_exception(&excpt);
     });
 
     Timer::add_callback([](u64) {

@@ -1,4 +1,5 @@
 #include "process.hpp"
+#include "manager.hpp"
 #include <fd/manager.hpp>
 #include <fs/fs_manager.hpp>
 #include <fcntl.h>
@@ -132,6 +133,20 @@ i32 Process::sys_dup(i32 src) {
 
 i32 Process::sys_dup2(i32 src, i32 dst) {
     return duplicate_handle(src, dst);
+}
+
+i32 Process::sys_exec(const char* path) {
+    FileDescription* fd;
+    SyscallError err = FileSystemManager::get()->open(&fd, path, OPENF_READ | OPENF_WRITE, &creds);
+    if (err != ENOERR)
+        return -err;
+    
+    if (!fd->may_exec) {
+        FileDescriptionManager::get()->close(fd);
+        return -EACCES;
+    }
+
+    ProcessManager::get()->run_extcmd(EXTCMD_EXEC, this, fd);
 }
 
 i32 Process::sys_ioctl(i32 fdn, i32 request, usize* args) {

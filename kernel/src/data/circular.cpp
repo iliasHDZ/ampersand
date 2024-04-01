@@ -1,6 +1,7 @@
 #include "circular.hpp"
 
 CircularBuffer::CircularBuffer(usize size) {
+    buffer_size = size;
     buffer = new u8[size];
 }
 
@@ -8,7 +9,7 @@ CircularBuffer::~CircularBuffer() {
     delete[] buffer;
 }
 
-u64 CircularBuffer::read(void* out, u64 offset, u64 size) {
+u64 CircularBuffer::read(void* out, u64 size) {
     size = min(size, (u64)readable_size());
 
     if (wr_ptr > rd_ptr) {
@@ -33,7 +34,7 @@ u64 CircularBuffer::read(void* out, u64 offset, u64 size) {
     return size;
 }
 
-u64 CircularBuffer::write(void* in, u64 offset, u64 size) {
+u64 CircularBuffer::write(void* in, u64 size) {
     size = min(size, (u64)writable_size());
 
     if (rd_ptr > wr_ptr) {

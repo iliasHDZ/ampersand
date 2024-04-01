@@ -15,33 +15,20 @@
 #include "drv/debugout.hpp"
 
 #include <arch/arch.hpp>
+#include <arch/keyboard.hpp>
 #include <logger.hpp>
 #include "fd/manager.hpp"
 
-extern ThreadSignal keyboard_input_signal;
-
-ThreadSignal thread2_signal;
-
-void thread1(void*) {
-    while (true) {
-        kthread_await(&keyboard_input_signal);
-
-        cout << " 1";
-
-        kthread_emit(&thread2_signal);
-    }
-}
-
-void thread2(void*) {
-    while (true) {
-        kthread_await(&thread2_signal);
-        
-        cout << " 2";
-    }
-}
-
 // idk what this is lmao
 extern "C" void __cxa_atexit() {}
+
+CharacterDevice* keyboard = nullptr;
+
+void keyboard_transmit_callback(u8 sc) {
+    Log::INFO() << Out::hex(2) << sc << '\n';
+    if (keyboard != nullptr)
+        keyboard->device_transmit(&sc, 1);
+}
 
 void kernel_init(void*) {
     /*
@@ -61,6 +48,12 @@ void kernel_init(void*) {
     FileSystemManager::init();
 
     VGABlockDevice::init();
+
+    keyboard = new CharacterDevice(true, false, 1 * KiB);
+
+    DevFileSystem::get()->add_device(keyboard, DevInode::CHARACTER_DEVICE, "kbd");
+
+    arch_set_keyboard_callback(keyboard_transmit_callback);
 
     SyscallError err;
 
@@ -176,8 +169,6 @@ extern "C" void kernel_main() {
 
     ThreadScheduler::init();
 
-    kthread_create(thread1, nullptr);
-    kthread_create(thread2, nullptr);
     kthread_create(kernel_init, nullptr);
 
     ThreadScheduler::get()->run();

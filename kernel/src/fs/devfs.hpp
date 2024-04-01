@@ -2,14 +2,21 @@
 
 #include "fs.hpp"
 #include <fd/blkdev.hpp>
+#include <fd/chrdev.hpp>
 #include <data/vec.hpp>
 #include <proc/credentials.hpp>
 
 #define DEVFS_INODE_MAX_NAME_LEN 32
 
 struct DevInode {
+    enum DevInodeType {
+        BLOCK_DEVICE,
+        CHARACTER_DEVICE
+    };
+
     u32 inode_id;
-    BlockDevice* device;
+    DevInodeType type;
+    InodeFile* device;
     char name[DEVFS_INODE_MAX_NAME_LEN + 1];
 
     void to_inode(FileSystem* fs, Inode* inode_out) const;
@@ -47,7 +54,7 @@ public:
 
     const char* source_path() override;
 
-    void add_block_device(BlockDevice* device, const char* name);
+    void add_device(InodeFile* device, DevInode::DevInodeType type, const char* name);
 
 public:
     static DevFileSystem* get();

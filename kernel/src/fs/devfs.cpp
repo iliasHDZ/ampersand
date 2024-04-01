@@ -9,7 +9,12 @@ void DevInode::to_inode(FileSystem* fs, Inode* out) const {
     out->inode_id   = inode_id;
     out->filesystem = fs;
     out->size = device->get_size();
-    out->mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IFBLK;
+    out->mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP;
+    if (type == BLOCK_DEVICE)
+        out->mode |= S_IFBLK;
+    else
+        out->mode |= S_IFCHR;
+
     out->uid  = dev_file_uid;
     out->gid  = dev_file_gid;
 }
@@ -128,7 +133,7 @@ const char* DevFileSystem::source_path() {
     return nullptr;
 }
 
-void DevFileSystem::add_block_device(BlockDevice* device, const char* name) {
+void DevFileSystem::add_device(InodeFile* device, DevInode::DevInodeType type, const char* name) {
     if (get_device_with_name(name) != nullptr) {
         panic("DevFileSystem: Multiple device files with the same name");
         return;
@@ -137,6 +142,7 @@ void DevFileSystem::add_block_device(BlockDevice* device, const char* name) {
     DevInode inode;
 
     inode.inode_id = inode_id_counter++;
+    inode.type     = type;
     inode.device   = device;
 
     usize len = strlen(name);

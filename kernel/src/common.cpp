@@ -101,20 +101,6 @@ extern "C" bool is_alloc_available() {
     return MemoryManager::get()->has_init();
 }
 
-extern "C" void panic(const char* err) {
-    Log::ERR() << "KERNEL PANIC!\n";
-    Log::ERR() << '\n';
-    Log::ERR() << "Error: " << err << '\n';
-    Log::ERR() << '\n';
-    Log::ERR() << "Ampersand & v" << AMPERSAND_VERSION << '\n';
-    Log::ERR() << '\n';
-    Log::ERR() << "Please report this error to the developer\n";
-    Log::ERR() << "You can manually restart or shutdown your computer\n";
-    Log::ERR() << '\n';
-
-    arch_lock_cpu();
-}
-
 extern "C" void kthread_create(ThreadFunc func, void* param) {
     ThreadScheduler::get()->create_thread(func, param);
 }

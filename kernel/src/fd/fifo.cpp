@@ -7,7 +7,7 @@ u64 FIFO::read(void* out, u64 offset, u64 size) {
     if (!can_read())
         return 0;
 
-    u64 ret = cbuffer.read(out, offset, size);
+    u64 ret = cbuffer.read(out, size);
     emit_event();
     return ret;
 }
@@ -16,7 +16,7 @@ u64 FIFO::write(void* in, u64 offset, u64 size) {
     if (!can_write())
         return 0;
 
-    u64 ret = cbuffer.write(in, offset, size);
+    u64 ret = cbuffer.write(in, size);
     emit_event();
     return ret;
 }

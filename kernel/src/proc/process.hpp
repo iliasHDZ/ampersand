@@ -59,6 +59,7 @@ public:
     i32 sys_pipe(i32* out);
     i32 sys_dup(i32 src);
     i32 sys_dup2(i32 src, i32 dst);
+    i32 sys_exec(const char* path);
     i32 sys_ioctl(i32 fd, i32 request, usize* args);
 
 private:

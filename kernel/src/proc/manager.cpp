@@ -82,6 +82,8 @@ isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
         
         return ret;
     }
+    case SYSCALL_EXEC:
+        return process->sys_exec((const char*)b);
     case SYSCALL_IOCTL:
         return process->sys_ioctl(b, c, (usize*)d);
     }
@@ -100,7 +102,7 @@ void ProcessManager::access_fault(Process* process, AccessFault fault) {
 
 static bool extcmd_fork = false;
 
-isize ProcessManager::handle_extcmd(usize cmd, Process* proc, Thread* caller) {
+isize ProcessManager::handle_extcmd(usize cmd, Process* proc, Thread* caller, void* param) {
     switch (cmd) {
     case EXTCMD_EXIT:
         exit(proc);
@@ -108,6 +110,9 @@ isize ProcessManager::handle_extcmd(usize cmd, Process* proc, Thread* caller) {
     case EXTCMD_FORK:
         extcmd_fork = true;
         return fork(proc, caller)->get_pid();
+    case EXTCMD_EXEC:
+        proc->exec((FileDescription*)param);
+        return 0;
     }
 }
 
@@ -119,15 +124,17 @@ static Mutex extcmd_mutex;
 static usize    extcmd_cmd;
 static Process* extcmd_proc;
 static Thread*  extcmd_caller;
+static void*    extcmd_param;
 static bool     extcmd_finished;
 static isize    extcmd_return;
 
-isize ProcessManager::run_extcmd(usize cmd, Process* proc) {
+isize ProcessManager::run_extcmd(usize cmd, Process* proc, void* param) {
     extcmd_mutex.lock();
 
     extcmd_cmd      = cmd;
     extcmd_proc     = proc;
     extcmd_caller   = ThreadScheduler::get()->current();
+    extcmd_param    = param;
     extcmd_finished = false;
 
     kthread_emit(&extcmd_run_signal);
@@ -149,7 +156,7 @@ static void process_extcmd_thread(void* _) {
         if (extcmd_finished)
             continue;
 
-        extcmd_return   = ProcessManager::get()->handle_extcmd(extcmd_cmd, extcmd_proc, extcmd_caller);
+        extcmd_return   = ProcessManager::get()->handle_extcmd(extcmd_cmd, extcmd_proc, extcmd_caller, extcmd_param);
         extcmd_finished = true;
 
         kthread_emit(&extcmd_finish_signal);

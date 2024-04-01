@@ -185,7 +185,7 @@ void ThreadScheduler::handle_yield(ArchThreadYieldStatus status) {
 void ThreadScheduler::handle_exception(Exception* excpt) {
     Log::ERR() << "KERNEL PANIC!\n";
     Log::ERR() << '\n';
-    Log::ERR() << "Exception: " << excpt->get_name() << '\n';
+    Log::ERR() << "Error: " << excpt->get_name() << '\n';
     Log::ERR() << "In Thread " << current_thread->get_id() << '\n';
     Log::ERR() << '\n';
 

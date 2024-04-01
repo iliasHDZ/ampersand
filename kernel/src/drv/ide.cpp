@@ -101,10 +101,6 @@ u64 IDEDevice::read_blocks(void* buf, u64 block_offset, u64 block_count) {
     if (block_offset >= size) return 0;
     if (block_count == 0) return 0;
 
-    if (buf == 0) {
-        asm("int $0x3");
-    }
-
     block_count = min(block_count, size - block_offset);
 
     if (channel->read_sectors(is_slave, block_offset, block_count, buf))
@@ -221,7 +217,7 @@ void IDEChannel::init() {
 
         dev_name[2] = 'a' + (ide_device_counter++);
 
-        DevFileSystem::get()->add_block_device(&devices[i], dev_name);
+        DevFileSystem::get()->add_device(&devices[i], DevInode::BLOCK_DEVICE, dev_name);
     }
 }
 

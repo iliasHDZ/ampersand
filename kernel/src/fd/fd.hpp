@@ -6,6 +6,8 @@ class FileSystem;
 
 class FileDescription {
 public:
+    virtual ~FileDescription();
+
     virtual bool has_size();
 
     virtual u64 get_size();

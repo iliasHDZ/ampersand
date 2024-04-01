@@ -91,5 +91,5 @@ u64 VGABlockDevice::get_size() {
 }
 
 void VGABlockDevice::init() {
-    DevFileSystem::get()->add_block_device(&vga_blkdev, "vga");
+    DevFileSystem::get()->add_device(&vga_blkdev, DevInode::BLOCK_DEVICE, "vga");
 }
