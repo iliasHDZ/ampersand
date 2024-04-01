@@ -2,7 +2,9 @@
 
 #include "fd.hpp"
 
-#define FIFO_QUEUE_SIZE 8 * KiB
+#include <data/circular.hpp>
+
+#define FIFO_BUFFER_SIZE 8 * KiB
 
 class FIFO : public FileDescription {
 public:
@@ -12,16 +14,12 @@ public:
 
     u64 write(void* in, u64 offset, u64 size) override;
 
+    bool can_read() override;
+
+    bool can_write() override;
+
     bool should_block() override;
 
 private:
-    usize readable_size() const;
-
-    usize writable_size() const;
-
-private:
-    usize rd_ptr;
-    usize wr_ptr;
-
-    u8 buffer[FIFO_QUEUE_SIZE] = { 0 };
+    CircularBuffer cbuffer;
 };

@@ -28,10 +28,10 @@ usize FileDescriptionHandle::read(void* dst, usize size) {
     if (!fd->should_block())
         return ret;
 
-    kthread_emit((ThreadSignal*)fd);
-
     while (ret < size) {
-        kthread_await((ThreadSignal*)fd);
+        FileDescription::await_event();
+        if (!fd->can_read())
+            continue;
         
         ret += read_raw(buf + ret, size - ret);
     }
@@ -47,10 +47,10 @@ usize FileDescriptionHandle::write(void* src, usize size) {
     if (!fd->should_block())
         return ret;
 
-    kthread_emit((ThreadSignal*)fd);
-
     while (ret < size) {
-        kthread_await((ThreadSignal*)fd);
+        FileDescription::await_event();
+        if (!fd->can_write())
+            continue;
         
         ret += write_raw(buf + ret, size - ret);
     }

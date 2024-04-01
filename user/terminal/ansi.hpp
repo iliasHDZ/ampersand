@@ -16,6 +16,8 @@ public:
 
     void write(char* buf, int size);
 
+    void put(char ch);
+
 private:
     Terminal* term;
     char bg = 0, fg = 0xf;

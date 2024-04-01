@@ -6,3 +6,7 @@ ANSIParser::ANSIParser(Terminal* term)
 void ANSIParser::write(char* buf, int size) {
 
 }
+
+void ANSIParser::put(char ch) {
+    
+}
