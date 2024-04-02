@@ -13,7 +13,8 @@
 #define SYSCALL_DUP   0x06
 #define SYSCALL_DUP2  0x07
 #define SYSCALL_FORK  0x08
-#define SYSCALL_EXEC  0x09
+#define SYSCALL_POLL  0x09
+#define SYSCALL_EXEC  0x0a
 
 #define SYSCALL_IOCTL 0x10
 #define SYSCALL_EXIT  0xff

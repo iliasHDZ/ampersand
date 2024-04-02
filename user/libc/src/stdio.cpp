@@ -10,3 +10,7 @@ int putchar(int ch) {
 int puts(const char* str) {
     return write(STDOUT_FILENO, str, strlen(str));
 }
+
+void _putchar(char ch) {
+    putchar(ch);
+}

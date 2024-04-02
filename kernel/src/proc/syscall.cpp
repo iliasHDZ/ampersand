@@ -24,7 +24,7 @@ isize Process::sys_read(i32 fd, void* buf, usize size) {
 
     FileDescriptionHandle* fdh = &fd_handles[fd];
 
-    if (!(fdh->perms | OPENF_READ))
+    if (!fdh->may_read())
         return -EBADF;
     
     return fdh->read(buf, size);
@@ -44,7 +44,7 @@ isize Process::sys_write(i32 fd, void* buf, usize size) {
 
     FileDescriptionHandle* fdh = &fd_handles[fd];
 
-    if (!(fdh->perms | OPENF_WRITE))
+    if (!fdh->may_write())
         return -EBADF;
     
     return fdh->write(buf, size);
@@ -52,8 +52,6 @@ isize Process::sys_write(i32 fd, void* buf, usize size) {
 
 i32 Process::sys_open(const char* path, isize oflags) {
     // TODO: Check if path is a valid user readable buffer
-
-    u32 flags = 0;
     usize flc = 0;
 
 #ifdef PRINT_SYSCALLS
@@ -62,33 +60,24 @@ i32 Process::sys_open(const char* path, isize oflags) {
     mutex.unlock();
 #endif
 
-    if (oflags & O_RDONLY) {
-        flags |= OPENF_READ;
+    if (oflags & O_RDONLY)
         flc++;
-    }
 
-    if (oflags & O_WRONLY) {
-        flags |= OPENF_READ;
+    if (oflags & O_WRONLY)
         flc++;
-    }
 
-    if (oflags & O_RDWR) {
-        flags |= OPENF_READ | OPENF_WRITE;
+    if (oflags & O_RDWR)
         flc++;
-    }
 
     if (flc != 1)
         return -EINVAL;
-    
-    if (oflags & O_CREAT)
-        flags |= OPENF_CREAT;
 
     FileDescription* fd;
-    SyscallError err = FileSystemManager::get()->open(&fd, path, flags, &creds);
+    SyscallError err = FileSystemManager::get()->open(&fd, path, oflags, &creds);
     if (err != ENOERR)
         return -err;
     
-    i32 fd_num = open_handle(fd, flags);
+    i32 fd_num = open_handle(fd, oflags);
     if (fd_num < 0) {
         FileDescriptionManager::get()->close(fd);
         return fd_num;
@@ -146,13 +135,13 @@ isize Process::sys_lseek(i32 fd, isize offset, u32 whence) {
 i32 Process::sys_pipe(i32* out) {
     FileDescription* pipe = FileDescriptionManager::get()->create_pipe();
 
-    i32 rd_end = open_handle(pipe, OPENF_READ);
+    i32 rd_end = open_handle(pipe, O_RDONLY);
     if (rd_end < 0) {
         FileDescriptionManager::get()->close(pipe);
         return rd_end;
     }
 
-    i32 wr_end = open_handle(pipe, OPENF_WRITE);
+    i32 wr_end = open_handle(pipe, O_WRONLY);
     if (wr_end < 0) {
         FileDescriptionManager::get()->close(pipe);
         return wr_end;
@@ -189,9 +178,42 @@ i32 Process::sys_dup2(i32 src, i32 dst) {
     return duplicate_handle(src, dst);
 }
 
+i32 Process::sys_poll(struct pollfd* fds, i32 nfds, i32 timeout) {
+    for (i32 i = 0; i < nfds; i++)
+        fds[i].revents = 0;
+    
+    bool loop = true;
+    while (loop) {
+        for (i32 i = 0; i < nfds; i++) {
+            i32 fdn = fds[i].fd;
+            if (!is_handle_open(fdn))
+                continue;
+
+            FileDescription* fd = fd_handles[fdn].fd;
+            
+            i32 revents = 0;
+            if (fd->can_read())
+                revents |= POLLRDNORM;
+            if (fd->can_write())
+                revents |= POLLWRNORM;
+
+            fds[i].revents |= fds[i].events & revents;
+            if (fds[i].revents)
+                loop = false;
+        }
+
+        if (!loop)
+            break;
+
+        FileDescription::await_event();
+    }
+
+    return 1;
+}
+
 i32 Process::sys_exec(const char* path) {
     FileDescription* fd;
-    SyscallError err = FileSystemManager::get()->open(&fd, path, OPENF_READ, &creds);
+    SyscallError err = FileSystemManager::get()->open(&fd, path, O_RDONLY, &creds);
     if (err != ENOERR)
         return -err;
 

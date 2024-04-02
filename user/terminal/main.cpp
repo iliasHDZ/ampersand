@@ -4,13 +4,35 @@
 #include "../libc/src/common.hpp"
 
 #include "terminal.hpp"
-
 #include "ansi.hpp"
+#include "keyboard.hpp"
+#include "keys_be.hpp"
+
+ANSIParser* ansip = nullptr;
+
+static void on_keyboard_write(char* data, int size) {
+    ansip->write(data, size);
+}
 
 int main() {
     VGATerminal term;
     ANSIParser ansi(&term);
+    Keyboard keyb;
 
+    ansip = &ansi;
+
+    struct pollfd pfds[1];
+
+    keyb.get_pollfd(pfds);
+    keyb.set_write_callback(on_keyboard_write);
+    keyb.load_keymap(&keymap_be);
+
+    while (true) {
+        keyb.update();
+        poll(pfds, 1, 1000);
+    }
+
+    /*
     int stdout_pipe[2];
     if (pipe(stdout_pipe) < 0)
         return -1;
@@ -28,6 +50,7 @@ int main() {
             ansi.put(ch);
         }
     }
+    */
 
     return 0;
 }

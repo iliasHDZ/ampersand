@@ -83,12 +83,14 @@ FSStatus Ext2FileSystem::fetch(Inode* dir, Inode* child_out, const char* name) {
 
         if (dirent) {
             usize inode_num = dirent->inode_num;
-            delete[] block;
 
-            if (!read_inode_entry(&entry, inode_num))
+            if (!read_inode_entry(&entry, inode_num)) {
+                delete[] block;
                 return FSStatus::NOT_ALLOWED;
+            }
             
             inode_entry_to_inode(&entry, child_out, dirent->inode_num);
+            delete[] block;
             return FSStatus::SUCCESS;
         }
     }

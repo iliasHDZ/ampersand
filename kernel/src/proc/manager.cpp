@@ -84,6 +84,8 @@ isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
     }
     case SYSCALL_EXEC:
         return process->sys_exec((const char*)b);
+    case SYSCALL_POLL:
+        return process->sys_poll((struct pollfd*)b, c, d);
     case SYSCALL_IOCTL:
         return process->sys_ioctl(b, c, (usize*)d);
     }

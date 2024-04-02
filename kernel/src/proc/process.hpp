@@ -7,6 +7,8 @@
 #include <fd/fd.hpp>
 #include "credentials.hpp"
 #include "error.hpp"
+#include <poll.h>
+#include <fcntl.h>
 
 #define PROCESS_STACK_SIZE (128 * KiB)
 
@@ -16,18 +18,21 @@ struct FileDescriptionHandle {
     bool open = false;
     FileDescription* fd = nullptr;
     usize access_ptr = 0;
-    usize perms = 0;
+    usize flags = 0;
 
     inline FileDescriptionHandle() {
         open = false;
     }
 
-    inline FileDescriptionHandle(FileDescription* fd, usize perms, usize access_ptr = 0) {
+    inline FileDescriptionHandle(FileDescription* fd, usize flags, usize access_ptr = 0) {
         open = true;
         this->fd = fd;
-        this->perms = perms;
+        this->flags = flags;
         this->access_ptr = access_ptr;
     }
+
+    inline bool may_read()  { return (flags & O_RDONLY) || (flags & O_RDWR); };
+    inline bool may_write() { return (flags & O_WRONLY) || (flags & O_RDWR); };
 
     usize read_raw(void* dst, usize size);
 
@@ -59,6 +64,7 @@ public:
     i32 sys_pipe(i32* out);
     i32 sys_dup(i32 src);
     i32 sys_dup2(i32 src, i32 dst);
+    i32 sys_poll(struct pollfd* fds, i32 nfds, i32 timeout);
     i32 sys_exec(const char* path);
     i32 sys_ioctl(i32 fd, i32 request, usize* args);
 

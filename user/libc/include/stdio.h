@@ -2,6 +2,7 @@
 #define STDIO_H
 
 #include <stdarg.h>
+#include <printf.h>
 
 typedef unsigned long size_t;
 typedef long ssize_t;

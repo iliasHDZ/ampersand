@@ -3,6 +3,7 @@
 #include <arch/drv/vga.hpp>
 #include <mem/paging.hpp>
 #include <fs/devfs.hpp>
+#include <fb.h>
 
 static u8* vga_framebuffer = 0;
 
@@ -88,6 +89,31 @@ void* VGABlockDevice::get_address() {
 
 u64 VGABlockDevice::get_size() {
     return 80 * 25 * 2;
+}
+
+usize VGABlockDevice::ioctl_count(isize request) {
+    switch (request) {
+    case FB_SET_CURSOR_X:
+    case FB_SET_CURSOR_Y:
+        return 1;
+    }
+
+    return 0;
+}
+
+isize VGABlockDevice::ioctl(isize request, usize* args) {
+    switch (request) {
+    case FB_SET_CURSOR_X:
+        binding::vga_set_cursor_pos(args[0], cursor_y);
+        cursor_x = args[0];
+        break;
+    case FB_SET_CURSOR_Y:
+        binding::vga_set_cursor_pos(cursor_x, args[0]);
+        cursor_y = args[0];
+        break;
+    }
+
+    return 0;
 }
 
 void VGABlockDevice::init() {

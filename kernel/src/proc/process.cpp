@@ -9,9 +9,7 @@
 usize FileDescriptionHandle::read_raw(void* dst, usize size) {
     MutexLock _(fd->access_mutex);
 
-    // Log::INFO() << "pre-read " << *(u32*)fd << "\n";
     usize ret = fd->read(dst, access_ptr, size);
-    // Log::INFO() << "post-read\n";
     if (fd->has_size())
         access_ptr += ret;
     return ret;
@@ -31,7 +29,7 @@ usize FileDescriptionHandle::read(void* dst, usize size) {
 
     usize ret = read_raw(buf, size);
 
-    if (!fd->should_block())
+    if (!fd->should_block() || (flags & O_NONBLOCK))
         return ret;
 
     while (ret < size) {
@@ -48,9 +46,12 @@ usize FileDescriptionHandle::read(void* dst, usize size) {
 usize FileDescriptionHandle::write(void* src, usize size) {
     u8* buf = (u8*)src;
 
+    if (flags & O_APPEND)
+        access_ptr = fd->get_size();
+
     usize ret = write_raw(buf, size);
 
-    if (!fd->should_block())
+    if (!fd->should_block() || (flags & O_NONBLOCK))
         return ret;
 
     while (ret < size) {
@@ -205,7 +206,7 @@ i32 Process::duplicate_handle(i32 src, i32 dst) {
 
     FileDescriptionHandle* fdh_src = &fd_handles[src];
 
-    dst = open_handle(fdh_src->fd, fdh_src->perms);
+    dst = open_handle(fdh_src->fd, fdh_src->flags);
     if (dst < 0)
         return dst;
 
@@ -228,7 +229,7 @@ Process* Process::fork(Thread* caller) {
         FileDescriptionHandle* fdh_src = &fd_handles[i];
 
         FileDescriptionManager::get()->open(fdh_src->fd);
-        dst->fd_handles.append(FileDescriptionHandle(fdh_src->fd, fdh_src->perms, fdh_src->access_ptr));
+        dst->fd_handles.append(FileDescriptionHandle(fdh_src->fd, fdh_src->flags, fdh_src->access_ptr));
     }
 
     dst->threads.append(ThreadScheduler::get()->fork(caller, dst->memory->get_vmem(), dst));

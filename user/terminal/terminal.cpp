@@ -1,6 +1,8 @@
 #include "terminal.hpp"
 
 #include <fcntl.h>
+#include <stropts.h>
+#include <fb.h>
 
 #define VGA_BLACK        0x0
 #define VGA_BLUE         0x1
@@ -26,7 +28,7 @@ VGATerminal::VGATerminal() {
 
     set_cursor(0, 0);
     for (int i = 0; i < 80 * 25; i++)
-        put(' ', 0, 0);
+        put(' ', 0, 0xf);
     set_cursor(0, 0);
 }
 
@@ -41,6 +43,9 @@ void VGATerminal::put(char ch, char bg, char fg) {
 
 void VGATerminal::set_cursor(int x, int y) {
     lseek(fd, (y * get_width() + x) * 2, SEEK_SET);
+
+    ioctl(fd, FB_SET_CURSOR_X, x);
+    ioctl(fd, FB_SET_CURSOR_Y, y);
 }
 
 void VGATerminal::scroll(char bg, char fg) {

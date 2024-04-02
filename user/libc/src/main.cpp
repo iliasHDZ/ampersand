@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stropts.h>
 #include <stdarg.h>
+#include <poll.h>
 #include "common.hpp"
 
 int errno = 0;
@@ -65,6 +66,11 @@ int open(const char* path, int oflags) {
 
 pid_t fork() {
     int ret = _kernel_syscall(SYSCALL_FORK, 0, 0, 0);
+    return _set_errno(ret) ? -1 : ret;
+}
+
+int poll(struct pollfd fds[], nfds_t nfds, int timeout) {
+    int ret = _kernel_syscall(SYSCALL_POLL, (u32)fds, nfds, timeout);
     return _set_errno(ret) ? -1 : ret;
 }
 

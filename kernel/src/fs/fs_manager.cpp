@@ -2,6 +2,7 @@
 #include <fd/manager.hpp>
 #include "virtualfs.hpp"
 #include <logger.hpp>
+#include <fcntl.h>
 
 #include "ext2.hpp"
 
@@ -129,7 +130,7 @@ FileSystemManager::FileSystemManager() {}
 SyscallError FileSystemManager::mount(const char* mntpath, const char* blkpath) {
     FileDescription* fd;
 
-    SyscallError err = open(&fd, blkpath, OPENF_READ | OPENF_WRITE, nullptr);
+    SyscallError err = open(&fd, blkpath, O_RDWR, nullptr);
     if (err != ENOERR)
         return err;
 
@@ -267,7 +268,7 @@ SyscallError FileSystemManager::open(FileDescription** fdout, const char* rpath,
 
     SyscallError err = get_inode(&inode, path, creds);
     if (err != ENOERR) {
-        if (!(flags & OPENF_CREAT))
+        if (!(flags & O_CREAT))
             return err;
         
         err = create_inode(&inode, path, S_IFREG | S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, creds);
@@ -276,10 +277,10 @@ SyscallError FileSystemManager::open(FileDescription** fdout, const char* rpath,
     }
 
     if (creds) {
-        if (flags & OPENF_READ && !creds->may_read(&inode))
+        if (((flags & O_RDONLY) || (flags & O_RDWR)) && !creds->may_read(&inode))
             return EACCES;
         
-        if (flags & OPENF_WRITE && !creds->may_write(&inode))
+        if (((flags & O_WRONLY) || (flags & O_RDWR)) && !creds->may_write(&inode))
             return EACCES;
     }
 

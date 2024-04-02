@@ -5,10 +5,6 @@
 #include <proc/error.hpp>
 #include "fs.hpp"
 
-#define OPENF_READ  0b00000001
-#define OPENF_WRITE 0b00000010
-#define OPENF_CREAT 0b00000100
-
 #define MAX_DIRENT_NAME 255
 
 const char* get_error_message(usize err);

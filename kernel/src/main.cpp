@@ -25,7 +25,6 @@ extern "C" void __cxa_atexit() {}
 CharacterDevice* keyboard = nullptr;
 
 void keyboard_transmit_callback(u8 sc) {
-    Log::INFO() << Out::hex(2) << sc << '\n';
     if (keyboard != nullptr)
         keyboard->device_transmit(&sc, 1);
 }
@@ -70,7 +69,7 @@ void kernel_init(void*) {
     }
 
     FileDescription* fd;
-    err = FileSystemManager::get()->open(&fd, "/dev/sdb", OPENF_READ | OPENF_WRITE, nullptr);
+    err = FileSystemManager::get()->open(&fd, "/dev/sdb", O_RDWR, nullptr);
     if (err != ENOERR) {
         Log::ERR() << "Could not open /dev/sdb: " << get_error_message(err) << '\n';
         panic("Error while mounting root");

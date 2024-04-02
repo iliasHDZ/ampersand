@@ -38,6 +38,14 @@ public:
 
     u64 get_size() override;
 
+    usize ioctl_count(isize request) override;
+
+    isize ioctl(isize request, usize* args) override;
+
 public:
     static void init();
+
+private:
+    i32 cursor_x = 0;
+    u32 cursor_y = 0;
 };
