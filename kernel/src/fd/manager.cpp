@@ -44,7 +44,7 @@ void FileDescriptionManager::save_fd(FileDescription* fd, FileDescriptionSource 
 }
 
 void FileDescriptionManager::open(FileDescription* fd) {
-    for (usize i; i < fds.size(); i++) {
+    for (usize i = 0; i < fds.size(); i++) {
         if (fds[i].fd == fd) {
             fds[i].refcount++;
             return;

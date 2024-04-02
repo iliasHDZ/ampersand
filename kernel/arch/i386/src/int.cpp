@@ -685,7 +685,9 @@ extern "C" void int_isr_handler() {
             fault.address = get_cr2();
             fault.type = (int_isr_regs->err_code & 1) ? AccessFault::READ_ONLY : AccessFault::NOT_PRESENT;
 
-            Log::ERR() << Out::phex(8) << "Access Fault at " << fault.address << " because " << ((fault.type == AccessFault::READ_ONLY) ? "READ_ONLY" : "NOT_PRESENT") << '\n';
+            Log::ERR() << Out::phex(8) << "Access Fault " << ( (int_isr_regs->err_code & 2) ? "writing " : "reading " )
+                                       << fault.address << " because "
+                                       << ((fault.type == AccessFault::READ_ONLY) ? "READ_ONLY" : "NOT_PRESENT") << '\n';
 
             // if (VirtualMemoryManager::get()->access_fault(fault))
             //    return;

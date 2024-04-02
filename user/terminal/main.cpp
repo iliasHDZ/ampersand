@@ -16,7 +16,7 @@ int main() {
         return -1;
     
     if (fork() == 0) {
-        dup2(stdout_pipe[1], 0);
+        dup2(stdout_pipe[1], STDOUT_FILENO);
 
         exec("/bin/bash");
     } else {

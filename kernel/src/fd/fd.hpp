@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common.h>
+#include <data/thread.hpp>
 
 class FileSystem;
 
@@ -33,6 +34,8 @@ public:
 
 public:
     bool may_exec = false;
+
+    Mutex access_mutex;
 };
 
 class InodeFile : public FileDescription {

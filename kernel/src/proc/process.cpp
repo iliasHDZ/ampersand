@@ -7,13 +7,19 @@
 #include "elf.hpp"
 
 usize FileDescriptionHandle::read_raw(void* dst, usize size) {
+    MutexLock _(fd->access_mutex);
+
+    // Log::INFO() << "pre-read " << *(u32*)fd << "\n";
     usize ret = fd->read(dst, access_ptr, size);
+    // Log::INFO() << "post-read\n";
     if (fd->has_size())
         access_ptr += ret;
     return ret;
 }
 
 usize FileDescriptionHandle::write_raw(void* src, usize size) {
+    MutexLock _(fd->access_mutex);
+
     usize ret = fd->write(src, access_ptr, size);
     if (fd->has_size())
         access_ptr += ret;

@@ -1,8 +1,9 @@
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 int main() {
-    write(0, "testings! \e[91mRED!", 20);
+    puts("testings! \e[91mRED!");
 
     for (;;);
 }

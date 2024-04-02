@@ -123,6 +123,8 @@ isize Process::sys_lseek(i32 fd, isize offset, u32 whence) {
     FileDescriptionHandle* fdh = &fd_handles[fd];
     if (!fdh->fd->has_size())
         return -ESPIPE;
+        
+    MutexLock _(fdh->fd->access_mutex);
     
     switch (whence) {
     case SEEK_SET:
@@ -214,6 +216,7 @@ i32 Process::sys_ioctl(i32 fdn, i32 request, usize* args) {
         return -EBADF;
 
     FileDescription* fd = fd_handles[fdn].fd;
+    MutexLock _(fd->access_mutex);
 
     if (args == nullptr)
         return fd->ioctl_count(request);
