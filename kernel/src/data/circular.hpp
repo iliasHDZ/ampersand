@@ -24,8 +24,8 @@ public:
     usize writable_size() const;
 
 private:
-    usize rd_ptr;
-    usize wr_ptr;
+    usize rd_ptr = 0;
+    usize wr_ptr = 0;
 
     u8* buffer;
     usize buffer_size;

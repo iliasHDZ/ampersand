@@ -62,3 +62,4 @@ set(IMAGE_DIR ${CMAKE_CURRENT_LIST_DIR}/image)
 include(./user/libc/Build.cmake)
 
 include(./user/terminal/Build.cmake)
+include(./user/bash/Build.cmake)

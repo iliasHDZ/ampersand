@@ -92,7 +92,7 @@ Thread* ThreadScheduler::create_user_thread(ThreadEntry entry, Process* process,
     
     thread->id = thread_id_counter++;
 
-    Log::INFO("ThreadScheduler") << "Created user thread " << thread->id << " for process " << thread->id << '\n';
+    Log::INFO("ThreadScheduler") << "Created user thread " << thread->id << " for process " << process->get_pid() << '\n';
 
     arch_thread_create(&(thread->instance), (void*)entry, param, stack, stack_size);
 

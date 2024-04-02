@@ -79,7 +79,7 @@ isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
 
         if (ProcessManager::get()->get_process_with_vmem(VirtualMemoryManager::get()->get_current()) != process)
             return 0;
-        
+
         return ret;
     }
     case SYSCALL_EXEC:
@@ -177,6 +177,8 @@ static void process_syscall_handler() {
     CPUState* state = current->get_syscall_state();
 
     usize ret = ProcessManager::get()->syscall(process, state->a(), state->b(), state->c(), state->d());
+
+    state = ThreadScheduler::get()->current()->get_syscall_state();
 
     set_a_mutex.lock();
     state->set_a(ret);
