@@ -69,6 +69,7 @@ Process::Process()
     : creds(0, 0)
 {
     memory = new ProcessMemory();
+    cwd = "/";
 }
 
 Process::~Process() {
@@ -88,12 +89,29 @@ SyscallError Process::exec(FileDescription* file) {
         return ENOEXEC;
     }
 
+    usize heap_base_page = 0x400;
+
+    for (auto& seg : mem->get_segments())
+        heap_base_page = max((u64)heap_base_page, seg->get_pagerange().limit);
+
+    brk = (void*)((heap_base_page + 1) * ARCH_PAGE_SIZE);
+
+    MemorySegment* heap_seg = MemorySegment::create(1, VMEM_PAGE_READ | VMEM_PAGE_WRITE);
+    
+    heap = mem->map_segment(heap_seg, PageRange::base_limit(heap_base_page, heap_base_page + 1));
+    if (heap == nullptr) {
+        delete mem;
+        delete heap_seg;
+        return ENOMEM;
+    }
+
     u64 stack_pages = PROCESS_STACK_SIZE / ARCH_PAGE_SIZE;
 
     MemorySegment* mseg = MemorySegment::create(stack_pages, VMEM_PAGE_READ | VMEM_PAGE_WRITE, true);
 
     if (mem->map_segment(mseg, PageRange::base_limit(0xC0000 - stack_pages, 0xC0000)) == nullptr) {
         delete mem;
+        delete heap_seg;
         delete mseg;
         return ENOMEM;
     }
@@ -234,4 +252,20 @@ Process* Process::fork(Thread* caller) {
 
     dst->threads.append(ThreadScheduler::get()->fork(caller, dst->memory->get_vmem(), dst));
     return dst;
+}
+
+Path Process::resolve(const char* path) {
+    return cwd.resolve(path);
+}
+
+void Process::set_brk(void* nbrk) {
+    usize nbrk_page = (usize)nbrk / ARCH_PAGE_SIZE;
+    if ((usize)nbrk % ARCH_PAGE_SIZE)
+        nbrk_page++;
+
+    nbrk_page = max((u64)nbrk_page, heap->get_pagerange().limit);
+    usize count = nbrk_page - heap->get_pagerange().limit;
+
+    heap->get_mem_segment()->set_page_count(count);
+    heap->resize(count);
 }

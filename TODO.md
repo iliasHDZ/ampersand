@@ -23,7 +23,7 @@
 - [ ] ftruncate
 - [x] dup
 - [x] dup2
-- [ ] poll
+- [x] poll
 
 - [ ] getcwd
 - [ ] getpid
@@ -57,12 +57,12 @@
 
 - [ ] waitpid
 - [ ] kill
-- [ ] fork
+- [x] fork
 - [ ] execv
 - [ ] execve
 
 # Programs
-- [ ] terminal
+- [x] terminal
 - [ ] shell
 
 # Shell commands

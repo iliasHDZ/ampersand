@@ -21,6 +21,7 @@ Path& Path::operator=(const Path& path) {
 
     count = path.count;
     str_tab_size = path.str_tab_size;
+    return (*this);
 }
 
 Path::~Path() {
@@ -34,6 +35,8 @@ void Path::parse(const char* path) {
 
     if (!*path)
         return;
+
+    absolute = (*path == '/');
 
     usize len = strlen(path);
     str_tab = new char[len + 1];
@@ -108,6 +111,26 @@ const char* Path::parent_as_entry_of(const Path& path) {
 
 usize Path::segment_count() const {
     return count;
+}
+
+Path Path::resolve(const Path& path) const {
+    if (path.absolute)
+        return path;
+    
+    Path ret;
+
+    ret.count = count + path.count;
+    ret.str_tab_size = str_tab_size + path.count;
+    ret.str_ptrs = new char*[ret.count];
+    ret.str_tab  = new char[ret.str_tab_size];
+
+    safe_copy(ret.str_ptrs, str_ptrs, count);
+    safe_copy(ret.str_ptrs + count, path.str_ptrs, path.count);
+
+    safe_copy(ret.str_tab, str_tab, str_tab_size);
+    safe_copy(ret.str_tab + str_tab_size, path.str_tab, path.str_tab_size);
+
+    return ret;
 }
 
 static const char* undefined = nullptr;

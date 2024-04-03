@@ -35,6 +35,8 @@ public:
 
     void process_unmap(ProcessSegment* seg);
 
+    void set_page_count(usize count);
+
     AccessFaultAction access_fault(ProcessSegment* instigator, AccessFault fault);
 
     static bool copy(MemorySegment* dst, MemorySegment* src);
@@ -65,6 +67,8 @@ public:
 
     void update_mapping();
 
+    void resize(usize count);
+
     void set_segment(MemorySegment* segment);
 
 private:
@@ -89,6 +93,8 @@ public:
     ProcessSegment* get_segment_at(u64 base_page);
 
     ProcessMemory* fork();
+
+    inline ROVec<ProcessSegment*> get_segments() { return segments; };
 
     AccessFaultAction access_fault(AccessFault fault);
 

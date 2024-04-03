@@ -50,9 +50,10 @@ isize Process::sys_write(i32 fd, void* buf, usize size) {
     return fdh->write(buf, size);
 }
 
-i32 Process::sys_open(const char* path, isize oflags) {
+i32 Process::sys_open(const char* rpath, isize oflags) {
     // TODO: Check if path is a valid user readable buffer
-    usize flc = 0;
+
+    Path path = resolve(rpath);
 
 #ifdef PRINT_SYSCALLS
     mutex.lock();
@@ -60,6 +61,7 @@ i32 Process::sys_open(const char* path, isize oflags) {
     mutex.unlock();
 #endif
 
+    usize flc = 0;
     if (oflags & O_RDONLY)
         flc++;
 
@@ -211,7 +213,9 @@ i32 Process::sys_poll(struct pollfd* fds, i32 nfds, i32 timeout) {
     return 1;
 }
 
-i32 Process::sys_exec(const char* path) {
+i32 Process::sys_exec(const char* rpath) {
+    Path path = resolve(rpath);
+
     FileDescription* fd;
     SyscallError err = FileSystemManager::get()->open(&fd, path, O_RDONLY, &creds);
     if (err != ENOERR)
@@ -228,7 +232,7 @@ i32 Process::sys_exec(const char* path) {
         return -EACCES;
     }
 
-    Log::INFO("Process") << "Process " << pid << " execs " << path << '\n';
+    // Log::INFO("Process") << "Process " << pid << " execs " << path << '\n';
 
     return ProcessManager::get()->run_extcmd(EXTCMD_EXEC, this, fd);
 }

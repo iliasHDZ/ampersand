@@ -9,3 +9,31 @@ size_t strlen(const char* str) {
 
     return ret;
 }
+
+
+template <typename T>
+inline T& access_increment(void*& ptr) {
+    return *( ( (T*&)ptr )++ );
+}
+
+template <typename T>
+inline const T& access_increment(const void*& ptr) {
+    return *( ( (T*&)ptr )++ );
+}
+
+void* memcpy(void* dst, const void* src, size_t size) {
+    void* ret = dst;
+    
+    unsigned long long_count = size / sizeof(unsigned long);
+    while (long_count) {
+        access_increment<unsigned long>(dst) = access_increment<unsigned long>(src);
+        long_count--;
+    }
+
+    while (size % sizeof(unsigned long)) {
+        access_increment<unsigned char>(dst) = access_increment<unsigned char>(src);
+        size--;
+    }
+
+    return ret;
+}

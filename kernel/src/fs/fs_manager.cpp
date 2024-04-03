@@ -127,7 +127,7 @@ FileSystem* Mount::get_fs() {
 
 FileSystemManager::FileSystemManager() {}
 
-SyscallError FileSystemManager::mount(const char* mntpath, const char* blkpath) {
+SyscallError FileSystemManager::mount(const Path& mntpath, const Path& blkpath) {
     FileDescription* fd;
 
     SyscallError err = open(&fd, blkpath, O_RDWR, nullptr);
@@ -137,7 +137,7 @@ SyscallError FileSystemManager::mount(const char* mntpath, const char* blkpath) 
     return mount(mntpath, fd, blkpath);
 }
 
-SyscallError FileSystemManager::mount(const char* mntpath, FileDescription* fd, const char* srcpath) {
+SyscallError FileSystemManager::mount(const Path& mntpath, FileDescription* fd, const Path& srcpath) {
     FileSystem* fs = create_fs_from_fd(fd, srcpath);
     if (fs == nullptr) {
         return EINVFS;
@@ -153,9 +153,8 @@ SyscallError FileSystemManager::mount(const char* mntpath, FileDescription* fd, 
     return ENOERR;
 }
 
-SyscallError FileSystemManager::mount(const char* rpath, FileSystem* fs, bool should_delete_fs) {
+SyscallError FileSystemManager::mount(const Path& path, FileSystem* fs, bool should_delete_fs) {
     Inode dir;
-    Path path = rpath;
 
     if (path.is_root())
         dir = { .inode_id = 0, .filesystem = nullptr };
@@ -176,7 +175,7 @@ SyscallError FileSystemManager::mount(const char* rpath, FileSystem* fs, bool sh
     const char* src = fs->source_path();
     src = src ? src : "none";
 
-    Log::INFO("FileSystemManager") << "Mounted " << src << " on " << rpath << " type " << fs->get_name() << '\n';
+    Log::INFO("FileSystemManager") << "Mounted " << src << " on " << path << " type " << fs->get_name() << '\n';
 
     fs->set_dev_no(dev_counter++);
     
@@ -189,9 +188,8 @@ SyscallError FileSystemManager::mount(const char* rpath, FileSystem* fs, bool sh
     return ENOERR;
 }
 
-SyscallError FileSystemManager::unmount(const char* rpath, bool force) {
+SyscallError FileSystemManager::unmount(const Path& path, bool force) {
     Inode dir;
-    Path path = rpath;
 
     SyscallError err = get_inode(&dir, path, nullptr);
     if (err != ENOERR)
@@ -229,14 +227,13 @@ SyscallError FileSystemManager::unmount(const char* rpath, bool force) {
         o << "Forcibly unmounted ";
     else
         o << "Unmounted ";
-    o << rpath << '\n';
+    o << path << '\n';
 
     return ENOERR;
 }
 
-SyscallError FileSystemManager::mkdir(const char* rpath, usize mode, Credentials* creds) {
+SyscallError FileSystemManager::mkdir(const Path& path, usize mode, Credentials* creds) {
     SyscallError err;
-    Path path = rpath;
 
     mode = (mode & ~S_IFMT) | S_IFDIR;
 
@@ -244,9 +241,8 @@ SyscallError FileSystemManager::mkdir(const char* rpath, usize mode, Credentials
     return create_inode(&dummy, path, mode, creds);
 }
 
-SyscallError FileSystemManager::rmdir(const char* rpath, Credentials* creds) {
+SyscallError FileSystemManager::rmdir(const Path& path, Credentials* creds) {
     SyscallError err;
-    Path path = rpath;
 
     Inode parent;
     err = get_inode(&parent, path.parent(), creds);
@@ -262,9 +258,8 @@ SyscallError FileSystemManager::rmdir(const char* rpath, Credentials* creds) {
     return status_to_syscallerror(parent.filesystem->rmdir(&parent, path.filename()));
 }
 
-SyscallError FileSystemManager::open(FileDescription** fdout, const char* rpath, u32 flags, Credentials* creds) {
+SyscallError FileSystemManager::open(FileDescription** fdout, const Path& path, u32 flags, Credentials* creds) {
     Inode inode;
-    Path path = rpath;
 
     SyscallError err = get_inode(&inode, path, creds);
     if (err != ENOERR) {
@@ -326,11 +321,8 @@ SyscallError FileSystemManager::close(InodeFile* fd) {
     return ENOERR;
 }
 
-SyscallError FileSystemManager::link(const char* rpath, const char* rnewpath, Credentials* creds) {
+SyscallError FileSystemManager::link(const Path& path, const Path& newpath, Credentials* creds) {
     SyscallError err;
-
-    Path path    = rpath;
-    Path newpath = rnewpath;
 
     Inode inode;
     Inode dir;
@@ -356,10 +348,9 @@ SyscallError FileSystemManager::link(const char* rpath, const char* rnewpath, Cr
     return status_to_syscallerror(dir.filesystem->link(&dir, &inode, newpath.filename()));
 }
 
-SyscallError FileSystemManager::unlink(const char* rpath, Credentials* creds) {
+SyscallError FileSystemManager::unlink(const Path& path, Credentials* creds) {
     SyscallError err;
     Inode inode;
-    Path path;
 
     err = get_inode(&inode, path, creds);
     if (err != ENOERR)
@@ -375,9 +366,8 @@ SyscallError FileSystemManager::unlink(const char* rpath, Credentials* creds) {
     return status_to_syscallerror(inode.filesystem->unlink(&inode, path.filename()));
 }
 
-SyscallError FileSystemManager::getdirentcount(const char* rpath, u32* count_out, Credentials* creds) {
+SyscallError FileSystemManager::getdirentcount(const Path& path, u32* count_out, Credentials* creds) {
     Inode dir;
-    Path path = rpath;
 
     SyscallError err = get_inode(&dir, path, creds);
     if (err != ENOERR)
@@ -393,9 +383,8 @@ SyscallError FileSystemManager::getdirentcount(const char* rpath, u32* count_out
     return status_to_syscallerror(status);
 }
 
-SyscallError FileSystemManager::getdirents(const char* rpath, DirEntry* dirents_out, Credentials* creds) {
+SyscallError FileSystemManager::getdirents(const Path& path, DirEntry* dirents_out, Credentials* creds) {
     Inode dir;
-    Path path = rpath;
 
     SyscallError err = get_inode(&dir, path, creds);
     if (err != ENOERR)
@@ -411,9 +400,8 @@ SyscallError FileSystemManager::getdirents(const char* rpath, DirEntry* dirents_
     return status_to_syscallerror(status);
 }
 
-SyscallError FileSystemManager::stat(const char* rpath, FSStat* stat_out, Credentials* creds) {
+SyscallError FileSystemManager::stat(const Path& path, FSStat* stat_out, Credentials* creds) {
     Inode inode;
-    Path path = rpath;
 
     SyscallError err = get_inode(&inode, path, creds);
     if (err != ENOERR)
@@ -433,63 +421,6 @@ SyscallError FileSystemManager::stat(const char* rpath, FSStat* stat_out, Creden
     stat_out->blocks  = 0; // TODO: Implement this
 
     return ENOERR;
-}
-
-void FileSystemManager::dbg_ls(const char* path) {
-    u32 count;
-    SyscallError err;
-
-    err = getdirentcount(path, &count, nullptr);
-    if (err != ENOERR) {
-        Log::INFO() << "ls: " << get_error_message(err) << '\n';
-        return;
-    }
-
-    DirEntry* entries = new DirEntry[count];
-
-    err = getdirents(path, entries, nullptr);
-    if (err != ENOERR) {
-        delete[] entries;
-        Log::INFO() << "ls: " << get_error_message(err) << '\n';
-        return;
-    }
-
-    usize len = strlen(path);
-
-    char* epath = new char[len + 256];
-    memcpy(epath, path, len);
-
-    FSStat fstat;
-
-    Log::INFO() << "ls " << path << " :\n";
-    for (usize i = 0; i < count; i++) {
-        DirEntry* entry = &entries[i];
-
-        usize elen = strlen(entry->name);
-        memcpy(epath + len, entry->name, elen + 1);
-
-        err = stat(epath, &fstat, nullptr);
-        if (err != ENOERR) {
-            delete[] epath;
-            delete[] entries;
-            Log::INFO() << "ls: " << get_error_message(err) << '\n';
-            return;
-        }
-
-        auto o = Log::INFO();
-        o << Out::dec();
-
-        o << (S_ISDIR(fstat.mode) ? 'd' : (S_ISBLK(fstat.mode) ? 'b' : '-'));
-
-        o << (fstat.mode & S_IRUSR ? 'r' : '-') << (fstat.mode & S_IWUSR ? 'w' : '-') << (fstat.mode & S_IXUSR ? 'x' : '-');
-        o << (fstat.mode & S_IRGRP ? 'r' : '-') << (fstat.mode & S_IWGRP ? 'w' : '-') << (fstat.mode & S_IXGRP ? 'x' : '-');
-        o << (fstat.mode & S_IROTH ? 'r' : '-') << (fstat.mode & S_IWOTH ? 'w' : '-') << (fstat.mode & S_IXOTH ? 'x' : '-');
-
-        o << ' ' << fstat.dev << ' ' << fstat.ino << ' ' << entry->name << '\n';
-    }
-
-    delete[] epath;
-    delete[] entries;
 }
 
 Mount* FileSystemManager::get_mount_at_inode(Inode* inode) {
@@ -626,9 +557,9 @@ SyscallError FileSystemManager::status_to_syscallerror(FSStatus status) const {
     };
 }
 
-FileSystem* FileSystemManager::create_fs_from_fd(FileDescription* fd, const char* srcpath) {
+FileSystem* FileSystemManager::create_fs_from_fd(FileDescription* fd, const Path& srcpath) {
     if (Ext2FileSystem::is_of_type(fd))
-        return new Ext2FileSystem(fd, srcpath);
+        return new Ext2FileSystem(fd, ""); // TODO: Fix source path!
 
     return nullptr;
 }

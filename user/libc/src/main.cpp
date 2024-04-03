@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <poll.h>
 #include "common.hpp"
+#include "heap.hpp"
 
 int errno = 0;
 
@@ -16,13 +17,51 @@ static bool _set_errno(ssize_t value) {
         return false;
 }
 
+int brk(void* brk) {
+    ssize_t ret = _kernel_syscall(SYSCALL_BRK, (u32)brk, 0, 0);
+    return _set_errno(ret) ? -1 : ret;
+}
+
+void* sbrk(size_t brk) {
+    return (void*)_kernel_syscall(SYSCALL_SBRK, brk, 0, 0);
+}
+
+LCHeap* heap = nullptr;
+
 extern "C" void _init_libc() {
-    
+    heap = ((LCHeap*)sbrk(0)) - 1;
+    *heap = LCHeap(sbrk(0), sbrk(0));
+
+    heap->set_resize_func([](void* limit) -> bool {
+        brk(limit);
+        return true;
+    });
 }
 
 void exit(int status) {
     _kernel_syscall(SYSCALL_EXIT, status, 0, 0);
     for (;;);
+}
+
+void* malloc(size_t size) {
+    if (heap == nullptr)
+        return nullptr;
+
+    return heap->malloc(size);
+}
+
+void* realloc(void* ptr, size_t size) {
+    if (heap == nullptr)
+        return nullptr;
+
+    return heap->realloc(ptr, size);
+}
+
+void free(void *ptr) {
+    if (heap == nullptr)
+        return;
+
+    heap->free(ptr);
 }
 
 int close(int fd) {

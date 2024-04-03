@@ -30,9 +30,13 @@ public:
 
     usize segment_count() const;
 
+    Path resolve(const Path& path) const;
+
     const char*& get(usize index) const;
 
     const char*& operator[](usize index) const;
+
+    inline bool is_absolute() const { return absolute; };
 
 private:
     void dealloc_current();
@@ -43,4 +47,6 @@ private:
 
     usize str_tab_size = 0;
     char* str_tab = nullptr;
+
+    bool absolute = false;
 };

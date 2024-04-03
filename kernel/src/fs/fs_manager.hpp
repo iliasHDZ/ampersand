@@ -42,34 +42,32 @@ class FileSystemManager {
 public:
     FileSystemManager();
 
-    SyscallError mount(const char* mntpath, const char* blkpath);
+    SyscallError mount(const Path& mntpath, const Path& blkpath);
 
-    SyscallError mount(const char* mntpath, FileDescription* fd, const char* srcpath = nullptr);
+    SyscallError mount(const Path& mntpath, FileDescription* fd, const Path& srcpath = nullptr);
 
-    SyscallError mount(const char* path, FileSystem* fs, bool should_delete_fs = false);
+    SyscallError mount(const Path& path, FileSystem* fs, bool should_delete_fs = false);
 
-    SyscallError unmount(const char* path, bool force = false);
+    SyscallError unmount(const Path& path, bool force = false);
 
-    SyscallError mkdir(const char* path, usize mode, Credentials* creds);
+    SyscallError mkdir(const Path& path, usize mode, Credentials* creds);
 
     // RMDIR HAS NOT BEEN TESTED!
-    SyscallError rmdir(const char* path, Credentials* creds);
+    SyscallError rmdir(const Path& path, Credentials* creds);
 
-    SyscallError open(FileDescription** fdout, const char* path, u32 flags, Credentials* creds);
+    SyscallError open(FileDescription** fdout, const Path& path, u32 flags, Credentials* creds);
 
     SyscallError close(InodeFile* fd);
 
-    SyscallError link(const char* path, const char* newpath, Credentials* creds);
+    SyscallError link(const Path& path, const Path& newpath, Credentials* creds);
 
-    SyscallError unlink(const char* path, Credentials* creds);
+    SyscallError unlink(const Path& path, Credentials* creds);
 
-    SyscallError getdirentcount(const char* path, u32* count_out, Credentials* creds);
+    SyscallError getdirentcount(const Path& path, u32* count_out, Credentials* creds);
 
-    SyscallError getdirents(const char* path, DirEntry* dirents_out, Credentials* creds);
+    SyscallError getdirents(const Path& path, DirEntry* dirents_out, Credentials* creds);
 
-    SyscallError stat(const char* path, FSStat* stat_out, Credentials* creds);
-
-    void dbg_ls(const char* path);
+    SyscallError stat(const Path& path, FSStat* stat_out, Credentials* creds);
 
 private:
     Mount* get_mount_at_inode(Inode* inode);
@@ -82,7 +80,7 @@ private:
 
     SyscallError status_to_syscallerror(FSStatus status) const;
 
-    FileSystem* create_fs_from_fd(FileDescription* fd, const char* srcpath);
+    FileSystem* create_fs_from_fd(FileDescription* fd, const Path& srcpath);
 
     void init_internal();
 

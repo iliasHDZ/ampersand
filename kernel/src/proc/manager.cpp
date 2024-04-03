@@ -88,6 +88,12 @@ isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
         return process->sys_poll((struct pollfd*)b, c, d);
     case SYSCALL_IOCTL:
         return process->sys_ioctl(b, c, (usize*)d);
+    case SYSCALL_BRK:
+        process->set_brk((void*)b);
+        return 0;
+    case SYSCALL_SBRK:
+        process->set_brk((void*)((usize)process->brk + (usize)b));
+        return (isize)process->brk;
     }
 
     return 0;

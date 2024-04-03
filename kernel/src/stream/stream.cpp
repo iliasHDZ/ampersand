@@ -159,6 +159,19 @@ OutputStream& OutputStream::operator<<(const char* val) {
     write(val, strlen(val));
     return *this;
 }
+    
+OutputStream& OutputStream::operator<<(const Path& val) {
+    if (val.is_absolute())
+        (*this) << '/';
+    
+    for (isize i = 0; i < val.segment_count(); i++) {
+        (*this) << val[i];
+        if (i < val.segment_count() - 1)
+            (*this) << '/';
+    }
+
+    return *this;
+}
 
 OutputStream& OutputStream::operator<<(u8 val) {
     write_uval(val);

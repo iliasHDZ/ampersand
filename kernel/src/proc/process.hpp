@@ -85,6 +85,10 @@ private:
 
     Process* fork(Thread* caller);
 
+    Path resolve(const char* path);
+
+    void set_brk(void* nbrk);
+
 private:
     Vec<Thread*> threads;
 
@@ -92,8 +96,14 @@ private:
 
     Credentials creds;
 
+    void* brk;
+
+    Path cwd;
+
     i32 pid = 0;
     ProcessMemory* memory;
+
+    ProcessSegment* heap;
 
     friend class ProcessManager;
 };

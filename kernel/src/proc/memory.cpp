@@ -82,6 +82,24 @@ void MemorySegment::process_unmap(ProcessSegment* seg) {
     }
 }
 
+void MemorySegment::set_page_count(usize count) {
+    usize prev_count = get_page_count();
+
+    if (count == prev_count)
+        return;
+
+    if (count < prev_count) {
+        for (usize i = prev_count - 1; i >= count; i--) {
+            MemoryManager::get()->dealloc_page(pages[i]);
+            pages.remove(i);
+        }
+    } else {
+        for (usize i = 0; i < count - prev_count; i++) {
+            pages.append(MemoryManager::get()->alloc_page());
+        }
+    }
+}
+
 AccessFaultAction MemorySegment::access_fault(ProcessSegment* instigator, AccessFault fault) {
     if (fault.type != AccessFault::READ_ONLY)
         return AccessFaultAction::SEGFAULT;
@@ -153,6 +171,28 @@ void ProcessSegment::update_mapping() {
             vmem->map_page(prange.base + page, pages[page], perms);
         else
             vmem->unmap_page(prange.base + page);
+    }
+}
+
+void ProcessSegment::resize(usize new_size) {
+    usize old_size = prange.page_count();
+
+    VirtualMemory* vmem = parent->get_vmem();
+    
+    VMemPerms perms  = msegment->get_perms_for_proc(this);
+    ROVec<u64> pages = msegment->get_pages();
+
+    if (new_size < old_size) {
+        for (usize i = new_size; i >= old_size; i--) {
+            vmem->unmap_page(prange.base + i);
+        }
+    } else {
+        for (usize i = old_size; i < new_size; i++) {
+            if (i < msegment->get_page_count())
+                vmem->map_page(prange.base + i, pages[i], perms);
+            else
+                vmem->unmap_page(prange.base + i);
+        }
     }
 }
 

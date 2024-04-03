@@ -19,6 +19,9 @@
 #define SYSCALL_IOCTL 0x10
 #define SYSCALL_EXIT  0xff
 
+#define SYSCALL_BRK  0x1000
+#define SYSCALL_SBRK 0x1001
+
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2

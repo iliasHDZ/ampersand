@@ -104,9 +104,6 @@ void kernel_init(void*) {
         Log::ERR() << "Could not remount /dev: " << get_error_message(err) << '\n';
         panic("Error while mounting root");
     }
-    
-    FileSystemManager::get()->dbg_ls("/bin/");
-    Log::INFO() << '\n';
 
     err = FileSystemManager::get()->open(&fd, "/bin/terminal", 0, nullptr);
     if (err != ENOERR) {

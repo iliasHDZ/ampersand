@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common.h>
+#include <data/path.hpp>
 
 class Stream {
     // Nothing here lol
@@ -64,6 +65,8 @@ public:
     void hexdump(void* buf, usize size, usize origin = 0);
     
     OutputStream& operator<<(const char* val);
+    
+    OutputStream& operator<<(const Path& val);
     
     OutputStream& operator<<(u8 val);
     
