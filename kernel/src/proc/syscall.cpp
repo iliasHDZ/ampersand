@@ -232,7 +232,7 @@ i32 Process::sys_exec(const char* rpath) {
         return -EACCES;
     }
 
-    // Log::INFO("Process") << "Process " << pid << " execs " << path << '\n';
+    Log::INFO("Process") << "Process " << pid << " execs " << path << '\n';
 
     return ProcessManager::get()->run_extcmd(EXTCMD_EXEC, this, fd);
 }

@@ -38,6 +38,12 @@ public:
 
     CPUState* get_syscall_state();
 
+    inline bool is_running() { return running; };
+
+    inline void set_running(bool val) { running = val; };
+
+    inline bool can_run() { return running && !is_blocked(); };
+
 private:
     ArchThreadInstance instance;
 
@@ -54,6 +60,8 @@ private:
     ThreadScheduler* scheduler;
 
     void* allocated_stack = nullptr;
+
+    bool running = false;
 
     u32 id;
 

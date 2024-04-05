@@ -41,7 +41,7 @@ int main() {
         dup2(stdin_pipe[0],  STDIN_FILENO);
         dup2(stdout_pipe[1], STDOUT_FILENO);
 
-        exec("/bin/bash");
+        execl("/bin/bash", "this", "is", "arguments", "test!", 0);
     } else {
         char ch;
         keyboard_out_fd = stdin_pipe[1];

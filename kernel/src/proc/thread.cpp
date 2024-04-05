@@ -84,6 +84,7 @@ Thread* ThreadScheduler::create_thread(ThreadEntry entry, void* param, usize sta
     arch_thread_create(&(thread->instance), (void*)entry, param, thread->allocated_stack, stack_size);
 
     threads.append(thread);
+    thread->set_running(true);
     return thread;
 }
 
@@ -132,11 +133,11 @@ void NO_RETURN ThreadScheduler::run() {
 
     auto thread = threads.after(current_thread);
 
-    while (thread->is_blocked() && thread != current_thread) {
+    while (!thread->can_run() && thread != current_thread) {
         thread = threads.after(thread);
     }
 
-    if (thread->is_blocked()) {
+    if (!thread->can_run()) {
         arch_idle_cpu();
         return;
     }

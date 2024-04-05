@@ -89,7 +89,7 @@ void MemorySegment::set_page_count(usize count) {
         return;
 
     if (count < prev_count) {
-        for (usize i = prev_count - 1; i >= count; i--) {
+        for (isize i = prev_count - 1; i >= (isize)count; i--) {
             MemoryManager::get()->dealloc_page(pages[i]);
             pages.remove(i);
         }
@@ -183,7 +183,7 @@ void ProcessSegment::resize(usize new_size) {
     ROVec<u64> pages = msegment->get_pages();
 
     if (new_size < old_size) {
-        for (usize i = new_size; i >= old_size; i--) {
+        for (isize i = new_size; i >= old_size; i--) {
             vmem->unmap_page(prange.base + i);
         }
     } else {
@@ -194,6 +194,8 @@ void ProcessSegment::resize(usize new_size) {
                 vmem->unmap_page(prange.base + i);
         }
     }
+
+    prange.limit = prange.base + new_size;
 }
 
 void ProcessSegment::set_segment(MemorySegment* segment) {
@@ -261,8 +263,11 @@ ProcessMemory* ProcessMemory::fork() {
 
     dst->vmem = VirtualMemoryManager::get()->create();
 
-    for (auto pseg : segments)
-        dst->map_segment(pseg->get_mem_segment(), pseg->get_pagerange());
+    for (auto pseg : segments) {
+        ProcessSegment* ret = dst->map_segment(pseg->get_mem_segment(), pseg->get_pagerange());
+        if (pseg == heap)
+            dst->heap = ret;
+    }
 
     return dst;
 }

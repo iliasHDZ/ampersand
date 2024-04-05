@@ -100,6 +100,9 @@ public:
 
     inline VirtualMemory* get_vmem() { return vmem; };
 
+public:
+    ProcessSegment* heap;
+
 private:
     friend class ProcessSegment;
 

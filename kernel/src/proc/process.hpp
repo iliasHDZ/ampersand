@@ -89,10 +89,16 @@ private:
 
     void set_brk(void* nbrk);
 
+    i32 sys_savelist(bool env, const char** list);
+    i32 sys_restorelist(bool env, char* dst);
+
 private:
     Vec<Thread*> threads;
 
     Vec<FileDescriptionHandle> fd_handles;
+
+    Vec<char*> argv;
+    Vec<char*> envp;
 
     Credentials creds;
 
@@ -102,8 +108,6 @@ private:
 
     i32 pid = 0;
     ProcessMemory* memory;
-
-    ProcessSegment* heap;
 
     friend class ProcessManager;
 };

@@ -74,6 +74,12 @@ Process::Process()
 
 Process::~Process() {
     delete memory;
+
+    for (isize i = 0; i >= argv.size(); i++)
+        delete[] argv[i];
+
+    for (isize i = 0; i >= envp.size(); i++)
+        delete[] envp[i];
 }
 
 SyscallError Process::exec(FileDescription* file) {
@@ -98,8 +104,8 @@ SyscallError Process::exec(FileDescription* file) {
 
     MemorySegment* heap_seg = MemorySegment::create(1, VMEM_PAGE_READ | VMEM_PAGE_WRITE);
     
-    heap = mem->map_segment(heap_seg, PageRange::base_limit(heap_base_page, heap_base_page + 1));
-    if (heap == nullptr) {
+    mem->heap = mem->map_segment(heap_seg, PageRange::base_limit(heap_base_page, heap_base_page + 1));
+    if (mem->heap == nullptr) {
         delete mem;
         delete heap_seg;
         return ENOMEM;
@@ -135,6 +141,8 @@ SyscallError Process::exec(FileDescription* file) {
     threads = thrds;
     delete memory;
     memory = mem;
+
+    thread->set_running(true);
 
     if (current_in_threads)
         kthread_exit();
@@ -238,6 +246,9 @@ Process* Process::fork(Thread* caller) {
     dst->creds  = creds;
     dst->memory = memory->fork();
 
+    dst->brk = brk;
+    dst->cwd = cwd;
+
     for (int i = 0; i < fd_handles.size(); i++) {
         if (!fd_handles[i].open) {
             dst->fd_handles.append(FileDescriptionHandle());
@@ -249,8 +260,10 @@ Process* Process::fork(Thread* caller) {
         FileDescriptionManager::get()->open(fdh_src->fd);
         dst->fd_handles.append(FileDescriptionHandle(fdh_src->fd, fdh_src->flags, fdh_src->access_ptr));
     }
-
-    dst->threads.append(ThreadScheduler::get()->fork(caller, dst->memory->get_vmem(), dst));
+    
+    Thread* nthread = ThreadScheduler::get()->fork(caller, dst->memory->get_vmem(), dst);
+    dst->threads.append(nthread);
+    nthread->set_running(true);
     return dst;
 }
 
@@ -263,9 +276,58 @@ void Process::set_brk(void* nbrk) {
     if ((usize)nbrk % ARCH_PAGE_SIZE)
         nbrk_page++;
 
-    nbrk_page = max((u64)nbrk_page, heap->get_pagerange().limit);
-    usize count = nbrk_page - heap->get_pagerange().limit;
+    nbrk_page = max((u64)nbrk_page, memory->heap->get_pagerange().base);
+    usize count = nbrk_page - memory->heap->get_pagerange().base;
 
-    heap->get_mem_segment()->set_page_count(count);
-    heap->resize(count);
+    memory->heap->get_mem_segment()->set_page_count(count);
+    memory->heap->resize(count);
+}
+
+i32 Process::sys_savelist(bool env, const char** list) {
+    Vec<char*>& dst = env ? envp : argv;
+
+    for (isize i = dst.size() - 1; i >= 0; i--){
+        delete[] dst[i];
+        dst.remove(i);
+    }
+    
+    while (*list) {
+        const char* str = *list;
+        usize len = strlen(str);
+
+        char* strdst = new char[len + 1];
+        memcpy(strdst, str, len + 1);
+
+        dst.append(strdst);
+        list++;
+    }
+
+    return 0;
+}
+
+i32 Process::sys_restorelist(bool env, char* dst) {
+    Vec<char*>& src = env ? envp : argv;
+
+    if (dst == nullptr) {
+        i32 len = 0;
+
+        for (auto str : src)
+            len += strlen(str) + 1;
+
+        return len;
+    }
+
+    for (auto str : src) {
+        usize len = strlen(str);
+
+        memcpy(dst, str, len + 1);
+        dst += len + 1;
+    }
+
+    for (isize i = src.size() - 1; i >= 0; i--){
+        delete[] src[i];
+        src.remove(i);
+    }
+
+    return 0;
 }

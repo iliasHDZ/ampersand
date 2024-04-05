@@ -19,8 +19,13 @@
 #define SYSCALL_IOCTL 0x10
 #define SYSCALL_EXIT  0xff
 
-#define SYSCALL_BRK  0x1000
-#define SYSCALL_SBRK 0x1001
+#define SYSCALL_BRK         0x1000
+#define SYSCALL_SBRK        0x1001
+#define SYSCALL_SAVELIST    0x1002
+#define SYSCALL_RESTORELIST 0x1003
+
+#define __LIST_ARGV 0
+#define __LIST_ENVP 1
 
 #define SEEK_SET 0
 #define SEEK_CUR 1
@@ -29,6 +34,8 @@
 #define STDIN_FILENO  0
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
+
+#define MAX_EXECL_ARGS 64
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,7 +61,11 @@ int dup2(int fildes, int fildes2);
 
 pid_t fork(void);
 
-int exec(const char* path);
+extern char** environ;
+int execl(const char* path, ...);
+int execle(const char* path, ...);
+int execv(const char* path, char* const argv[]);
+int execve(const char* path, char* const argv[], char* const envp[]);
 
 #ifdef __cplusplus
 }

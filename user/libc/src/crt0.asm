@@ -11,6 +11,9 @@ extern _fini
 extern main
 extern exit
 
+extern __main_argc
+extern __main_argv
+
 _start:
     mov ebp, 0
     push ebp
@@ -21,7 +24,12 @@ _start:
 
     call _init
 
+    mov ebx, [__main_argv]
+    mov eax, [__main_argc]
+    push ebx
+    push eax
     call main
+    add esp, 8
     push eax
 
     call _fini
