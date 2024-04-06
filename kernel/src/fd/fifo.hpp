@@ -2,7 +2,7 @@
 
 #include "fd.hpp"
 
-#include <data/circular.hpp>
+#include <common/circular.hpp>
 
 #define FIFO_BUFFER_SIZE 8 * KiB
 

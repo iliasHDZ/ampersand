@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common.h>
-#include <data/chain.hpp>
+#include <common/chain.hpp>
 #include "pci_device.hpp"
 
 class PCIDeviceDriver : public DLChainItem {

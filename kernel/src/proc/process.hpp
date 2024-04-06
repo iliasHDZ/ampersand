@@ -3,10 +3,11 @@
 #include "memory.hpp"
 
 #include "thread.hpp"
-#include <data/chain.hpp>
+#include <common/chain.hpp>
 #include <fd/fd.hpp>
 #include "credentials.hpp"
 #include "error.hpp"
+#include <common/path.hpp>
 #include <poll.h>
 #include <fcntl.h>
 

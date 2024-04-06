@@ -13,6 +13,8 @@ execute_process(COMMAND ${CMAKE_ASM_NASM_COMPILER} -f elf32 -o ${CRT0_PATH} ${CM
 
 function(target_ampersand object)
     target_link_libraries(${object} ${LIBC_NAME})
+    target_link_libraries(${object} ${LIBCOMMON_NAME})
     target_include_directories(${object} PUBLIC ${LIBC_DIR}/include)
+    target_include_directories(${object} PUBLIC ${LIBCOMMON_DIR})
     set_target_properties(${object} PROPERTIES LINK_FLAGS "-nostdlib -n -T ${LIBC_DIR}/linker.ld ${CRT0_PATH}")
 endfunction()

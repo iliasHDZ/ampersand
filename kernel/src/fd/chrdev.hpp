@@ -1,7 +1,7 @@
 #pragma once
 
 #include "fd.hpp"
-#include <data/circular.hpp>
+#include <common/circular.hpp>
 
 class CharacterDevice : public InodeFile {
 public:

@@ -5,82 +5,6 @@
 #include "mem/paging.hpp"
 #include "proc/thread.hpp"
 
-extern "C" usize strlen(const char* str) {
-    const char* begin = str;
-    while (*str) str++;
-
-    return str - begin;
-}
-
-extern "C" bool streq(const char* str1, const char* str2) {
-    while (*str1 && *str2 && *str1 == *str2) {
-        str1++;
-        str2++;
-    }
-
-    return *str1 == *str2;
-}
-
-extern "C" bool memeq(const void* ptr1, const void* ptr2, usize num) {
-    for (usize i = 0; i < num; i++) {
-        if (((u8*)ptr1)[i] != ((u8*)ptr2)[i])
-            return false;
-    }
-
-    return true;
-}
-
-template <typename T>
-inline T& access_increment(void*& ptr) {
-    return *( ( (T*&)ptr )++ );
-}
-
-template <typename T>
-inline const T& access_increment(const void*& ptr) {
-    return *( ( (T*&)ptr )++ );
-}
-
-extern "C" void* memcpy(void* dst, const void* src, usize size) {
-    void* ret = dst;
-    
-    usize usize_count = size / sizeof(usize);
-    while (usize_count) {
-        access_increment<usize>(dst) = access_increment<usize>(src);
-        usize_count--;
-    }
-
-    while (size % sizeof(usize)) {
-        access_increment<u8>(dst) = access_increment<u8>(src);
-        size--;
-    }
-
-    return ret;
-}
-
-extern "C" void* memset(void* dst, int ch, usize size) {
-    void* ret = dst;
-
-    usize value = ch;
-    value |= value << 8;
-    value |= value << 16;
-#if ARCH_BITS==64
-    value |= value << 32;
-#endif
-    
-    usize usize_count = size / sizeof(usize);
-    while (usize_count) {
-        access_increment<usize>(dst) = value;
-        usize_count--;
-    }
-
-    while (size % sizeof(usize)) {
-        access_increment<u8>(dst) = value & 0xff;
-        size--;
-    }
-
-    return ret;
-}
-
 extern "C" void* kmalloc(usize size) {
     return MemoryManager::get()->kmalloc(size);
 }
@@ -107,6 +31,30 @@ extern "C" void kthread_create(ThreadFunc func, void* param) {
 
 extern "C" void kthread_emit(ThreadSignal* signal) {
     ThreadScheduler::get()->emit(signal);
+}
+
+void* __malloc(usize size) {
+    return kmalloc(size);
+}
+
+void* __realloc(void* ptr, usize size) {
+    return krealloc(ptr, size);
+}
+
+void __free(void *ptr) {
+    return kfree(ptr);
+}
+
+bool __is_alloc_available() {
+    return is_alloc_available();
+}
+
+void __thread_await(ThreadSignal* signal) {
+    return kthread_await(signal);
+}
+
+void __thread_emit(ThreadSignal* signal) {
+    return kthread_emit(signal);
 }
 
 extern "C" void kthread_exit() {

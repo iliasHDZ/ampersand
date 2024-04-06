@@ -1,7 +1,7 @@
 #include "manager.hpp"
 
 #include <logger.hpp>
-#include <data/thread.hpp>
+#include <common/thread.hpp>
 
 static ProcessManager pm_instance;
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common.h>
-#include <data/path.hpp>
+#include <common/path.hpp>
 
 class Stream {
     // Nothing here lol

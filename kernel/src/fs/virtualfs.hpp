@@ -1,7 +1,7 @@
 #pragma once
 
 #include "fs.hpp"
-#include <data/vec.hpp>
+#include <common/vec.hpp>
 
 // This does NOT work well and should be completely rewritten!
 // VirtualFs should only be used to temporarily mount as root

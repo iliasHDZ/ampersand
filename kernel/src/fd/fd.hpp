@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common.h>
-#include <data/thread.hpp>
+#include <common/thread.hpp>
 
 class FileSystem;
 

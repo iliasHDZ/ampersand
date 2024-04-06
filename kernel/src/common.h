@@ -1,28 +1,6 @@
 #pragma once
 
-typedef unsigned char      u8;
-typedef unsigned short     u16;
-typedef unsigned int       u32;
-typedef unsigned long long u64;
-
-typedef char      i8;
-typedef short     i16;
-typedef int       i32;
-typedef long long i64;
-
-#if ARCH_BITS==16
-typedef i16 isize;
-typedef u16 usize;
-#elif ARCH_BITS==32
-typedef i32 isize;
-typedef u32 usize;
-#elif ARCH_BITS==64
-typedef i64 isize;
-typedef u64 usize;
-#endif
-
-typedef u32 time32;
-typedef u64 time64;
+#include <common/common.hpp>
 
 #define KiB (1024)
 #define MiB (1024 * 1024)
@@ -39,19 +17,20 @@ extern "C" {
 
 typedef void(*ThreadFunc)(void*);
 
-typedef struct {
-    usize unused;
-} ThreadSignal;
+#define strlen __strlen
+#define strcmp __strcmp
 
-usize strlen(const char* str);
+#define memcpy __memcpy
+#define memset __memset
+#define memcmp __memcmp
 
-bool streq(const char* str1, const char* str2);
+inline bool streq(const char* ptr1, const char* ptr2) {
+    return strcmp(ptr1, ptr2) == 0;
+}
 
-bool memeq(const void* ptr1, const void* ptr2, usize num);
-
-void* memcpy(void* dst, const void* src, usize size);
-
-void* memset(void* dst, int ch, usize size);
+inline bool memeq(const void* ptr1, const void* ptr2, usize size) {
+    return memcmp(ptr1, ptr2, size) == 0;
+}
 
 void* kmalloc(usize size);
 
@@ -85,51 +64,6 @@ static inline char get_hex_char(u8 val) {
 }
 
 #ifdef __cplusplus
-}
-
-struct monostate {};
-
-template <typename T>
-inline T max(T a, T b) {
-    return (a > b) ? a : b;
-}
-
-template <typename T>
-inline T min(T a, T b) {
-    return (a < b) ? a : b;
-}
-
-template <typename T>
-inline T clamp(T val, T lo, T hi) {
-    if (val < lo)
-        return lo;
-    else if (val > hi)
-        return hi;
-    else
-        return val;
-}
-
-template <typename T>
-inline T alignceil(T val, T align) {
-    T nval = (val >> align) << align;
-    if (val != nval)
-        nval += 1 << align;
-
-    return nval;
-}
-
-template <typename T>
-inline T divceil(T num, T div) {
-    if (num % div > 0)
-        return (num / div) + 1;
-
-    return num / div;
-}
-
-template <typename T>
-inline void safe_copy(T* dst, T* src, usize count) {
-    for (usize i = 0; i < count; i++)
-        dst[i] = src[i];
 }
 
 #ifndef __INTELLISENSE__

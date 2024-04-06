@@ -4,7 +4,7 @@
 
 #include "../stream/terminal.hpp"
 
-#include <data/rovec.hpp>
+#include <common/rovec.hpp>
 
 enum class VideoDeviceType {
     VGA

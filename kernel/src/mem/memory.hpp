@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common.h>
-#include <data/rovec.hpp>
+#include <common/rovec.hpp>
 #include <arch/arch.hpp>
 
 #define MEMORY_MAP_MAX_RANGE_COUNT 32

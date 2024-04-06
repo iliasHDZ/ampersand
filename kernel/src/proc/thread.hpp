@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common.h>
-#include <data/chain.hpp>
+#include <common/chain.hpp>
 #include <arch/thread.hpp>
 #include <mem/paging.hpp>
 

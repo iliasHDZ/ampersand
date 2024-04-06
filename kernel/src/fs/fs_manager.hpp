@@ -1,7 +1,7 @@
 #include <common.h>
 #include <fd/fd.hpp>
 #include <proc/credentials.hpp>
-#include <data/path.hpp>
+#include <common/path.hpp>
 #include <proc/error.hpp>
 #include "fs.hpp"
 

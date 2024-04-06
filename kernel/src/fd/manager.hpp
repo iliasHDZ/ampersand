@@ -2,7 +2,7 @@
 
 #include "fd.hpp"
 
-#include <data/vec.hpp>
+#include <common/vec.hpp>
 #include <proc/error.hpp>
 
 enum class FileDescriptionSource {

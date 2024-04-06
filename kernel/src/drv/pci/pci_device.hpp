@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common.h>
-#include <data/chain.hpp>
+#include <common/chain.hpp>
 
 class PCIManager;
 

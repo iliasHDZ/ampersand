@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mem/paging.hpp>
-#include <data/vec.hpp>
+#include <common/vec.hpp>
 
 class ProcessSegment;
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common.h>
-#include <data/vec.hpp>
+#include <common/vec.hpp>
 
 typedef u16 UserID;
 typedef u16 GroupID;

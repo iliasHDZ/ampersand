@@ -15,6 +15,16 @@ else()
     message(FATAL_ERROR "Ampersand kernel does not support architecture '${TARGET_ARCH}'")
 endif()
 
+##########################
+####  COMMON LIBRARY  ####
+##########################
+set(LIBCOMMON_NAME common)
+set(LIBCOMMON_DIR  ${CMAKE_CURRENT_LIST_DIR})
+
+file(GLOB_RECURSE LIBCOMMON_CXX_SRCS ./common/**.cpp)
+
+add_library(${LIBCOMMON_NAME} STATIC ${LIBCOMMON_CXX_SRCS})
+
 ##################
 ####  KERNEL  ####
 ##################
@@ -47,9 +57,12 @@ if(${UNIT_TESTING_BEFORE_STARTUP} EQUAL 1)
     add_compile_definitions(kernel PRIVATE UNIT_TESTING_BEFORE_STARTUP)
 endif()
 
+target_link_libraries(kernel ${LIBCOMMON_NAME})
+
 target_include_directories(kernel PUBLIC ./kernel)
 target_include_directories(kernel PUBLIC ./kernel/src)
 target_include_directories(kernel PUBLIC ./user/libc/include)
+target_include_directories(kernel PUBLIC .)
 
 set_target_properties(kernel PROPERTIES LINK_FLAGS   "-nostdlib -n -T ${CMAKE_SOURCE_DIR}/linker.ld")
 

@@ -23,5 +23,3 @@ file(GLOB_RECURSE ARCH_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/src/**.cpp
     ${CMAKE_CURRENT_LIST_DIR}/asm/**.asm
 )
-
-# /home/iliashdz/opt/cross/bin/i686-elf-g++ -fno-pie -m32 -ffreestanding -fno-exceptions -fno-rtti -g -nostdlib -n -T /home/iliashdz/ampersand/linker.ld /home/iliashdz/ampersand/build/crti.o /home/iliashdz/opt/cross/lib/gcc/i686-elf/14.0.0/crtbegin.o

@@ -3,7 +3,7 @@
 #include "fs.hpp"
 #include <fd/blkdev.hpp>
 #include <fd/chrdev.hpp>
-#include <data/vec.hpp>
+#include <common/vec.hpp>
 #include <proc/credentials.hpp>
 
 #define DEVFS_INODE_MAX_NAME_LEN 32

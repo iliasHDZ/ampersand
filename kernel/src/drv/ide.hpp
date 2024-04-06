@@ -4,8 +4,8 @@
 
 #include <fd/block_transfer.hpp>
 #include <fd/blkdev.hpp>
-#include <data/queue.hpp>
-#include <data/thread.hpp>
+#include <common/queue.hpp>
+#include <common/thread.hpp>
 
 class IDEChannel;
 
