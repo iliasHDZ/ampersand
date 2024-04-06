@@ -6,6 +6,10 @@
 #include <limits.h>
 #include "elf.hpp"
 
+ThreadSignal Process::process_exit;
+int          Process::process_exit_pid = 0;
+int          Process::process_exit_status = 0;
+
 usize FileDescriptionHandle::read_raw(void* dst, usize size) {
     MutexLock _(fd->access_mutex);
 
@@ -150,7 +154,7 @@ SyscallError Process::exec(FileDescription* file) {
     return ENOERR;
 }
 
-void Process::close() {
+void Process::close(i32 status) {
     for (usize i = 0; i < fd_handles.size(); i++) {
         if (fd_handles[i].open)
             close_handle(i);
@@ -158,6 +162,10 @@ void Process::close() {
 
     for (auto thread : threads)
         ThreadScheduler::get()->exit(thread);
+
+    process_exit_pid = pid;
+    process_exit_status = status;
+    kthread_emit(&process_exit);
 }
 
 void Process::set_pid(usize pid) {

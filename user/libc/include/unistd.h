@@ -4,20 +4,21 @@
 #define _POSIX_VERSION 200809L
 #define _XOPEN_VERSION 700
 
-#define SYSCALL_READ  0x00
-#define SYSCALL_WRITE 0x01
-#define SYSCALL_OPEN  0x02
-#define SYSCALL_CLOSE 0x03
-#define SYSCALL_LSEEK 0x04
-#define SYSCALL_PIPE  0x05
-#define SYSCALL_DUP   0x06
-#define SYSCALL_DUP2  0x07
-#define SYSCALL_FORK  0x08
-#define SYSCALL_POLL  0x09
-#define SYSCALL_EXEC  0x0a
+#define SYSCALL_READ    0x00
+#define SYSCALL_WRITE   0x01
+#define SYSCALL_OPEN    0x02
+#define SYSCALL_CLOSE   0x03
+#define SYSCALL_LSEEK   0x04
+#define SYSCALL_PIPE    0x05
+#define SYSCALL_DUP     0x06
+#define SYSCALL_DUP2    0x07
+#define SYSCALL_FORK    0x08
+#define SYSCALL_POLL    0x09
+#define SYSCALL_EXEC    0x0a
+#define SYSCALL_WAITPID 0x0b
 
-#define SYSCALL_IOCTL 0x10
-#define SYSCALL_EXIT  0xff
+#define SYSCALL_IOCTL   0x10
+#define SYSCALL_EXIT    0xff
 
 #define SYSCALL_BRK         0x1000
 #define SYSCALL_SBRK        0x1001

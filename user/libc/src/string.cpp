@@ -37,3 +37,16 @@ void* memcpy(void* dst, const void* src, size_t size) {
 
     return ret;
 }
+
+void* memset(void* s, int c, size_t n) {
+    unsigned char v = c;
+    char* b = (char*)s;
+
+    while (n) {
+        *b = v;
+        b++;
+        n--;
+    }
+
+    return s;
+}

@@ -4,6 +4,7 @@
 #include <stropts.h>
 #include <stdarg.h>
 #include <poll.h>
+#include <sys/wait.h>
 #include "common.hpp"
 #include "heap.hpp"
 
@@ -255,6 +256,11 @@ int execve(const char* path, char* const argv[], char* const envp[]) {
     savelist(__LIST_ARGV, (const char**)argv);
     savelist(__LIST_ENVP, (const char**)envp);
     exec(path);
+}
+
+pid_t waitpid(pid_t pid, int* stat_loc, int options) {
+    int ret = _kernel_syscall(SYSCALL_WAITPID, pid, (u32)stat_loc, options);
+    return _set_errno(ret) ? -1 : ret;
 }
 
 int ioctl(int fd, int request, ...) {

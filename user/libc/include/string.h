@@ -10,6 +10,7 @@ extern "C" {
 size_t strlen(const char *);
 
 void* memcpy(void* s1, const void* s2, size_t n);
+void* memset(void* s, int c, size_t n);
 
 #ifdef __cplusplus
 }

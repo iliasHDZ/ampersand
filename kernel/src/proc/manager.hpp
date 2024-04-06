@@ -15,7 +15,7 @@ public:
 
     Process* create();
 
-    void exit(Process* process);
+    void exit(Process* process, i32 status = 0);
 
     Process* fork(Process* process, Thread* caller);
 

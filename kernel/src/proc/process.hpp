@@ -66,10 +66,11 @@ public:
     i32 sys_dup2(i32 src, i32 dst);
     i32 sys_poll(struct pollfd* fds, i32 nfds, i32 timeout);
     i32 sys_exec(const char* path);
+    i32 sys_waitpid(i32 pid, i32* stat_loc, int options);
     i32 sys_ioctl(i32 fd, i32 request, usize* args);
 
 private:
-    void close();
+    void close(i32 status);
 
     void set_pid(usize pid);
 
@@ -91,6 +92,11 @@ private:
 
     i32 sys_savelist(bool env, const char** list);
     i32 sys_restorelist(bool env, char* dst);
+
+private:
+    static ThreadSignal process_exit;
+    static int          process_exit_pid;
+    static int          process_exit_status;
 
 private:
     Vec<Thread*> threads;

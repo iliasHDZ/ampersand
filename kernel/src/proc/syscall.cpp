@@ -237,6 +237,17 @@ i32 Process::sys_exec(const char* rpath) {
     return ProcessManager::get()->run_extcmd(EXTCMD_EXEC, this, fd);
 }
 
+i32 Process::sys_waitpid(i32 pid, i32* stat_loc, int options) {
+    if (pid < 1)
+        return -ECHILD; // Not implemented
+    
+    while (process_exit_pid != pid)
+        kthread_await(&process_exit);
+
+    *stat_loc = process_exit_status;
+    return 0;
+}
+
 i32 Process::sys_ioctl(i32 fdn, i32 request, usize* args) {
     if (!is_handle_open(fdn))
         return -EBADF;

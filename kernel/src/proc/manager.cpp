@@ -33,8 +33,8 @@ Process* ProcessManager::create() {
     return process;
 }
 
-void ProcessManager::exit(Process* process) {
-    process->close();
+void ProcessManager::exit(Process* process, i32 status) {
+    process->close(status);
 
     Log::INFO("ProcessManager") << "Closed process " << process->get_pid() << '\n';
 
@@ -55,7 +55,7 @@ isize ProcessManager::syscall(Process* process, usize a, usize b, usize c, usize
 
     switch (a) {
     case SYSCALL_EXIT:
-        run_extcmd(EXTCMD_EXIT, process);
+        run_extcmd(EXTCMD_EXIT, process, (void*)a);
         kthread_await(0);
         return 0;
     case SYSCALL_READ:
@@ -118,7 +118,7 @@ static bool extcmd_fork = false;
 isize ProcessManager::handle_extcmd(usize cmd, Process* proc, Thread* caller, void* param) {
     switch (cmd) {
     case EXTCMD_EXIT:
-        exit(proc);
+        exit(proc, (i32)param);
         return 0;
     case EXTCMD_FORK:
         extcmd_fork = true;
